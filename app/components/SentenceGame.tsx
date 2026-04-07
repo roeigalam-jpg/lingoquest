@@ -1,8 +1,9 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { completeGame } from '../lib/api';
+import { sounds } from '../lib/sounds';
 
-const CONTENT: any = {
+const CONTENT: Record<string, Array<{words: string[], correct: string}>> = {
   explorers: [
     { words: ['I', 'like', 'cats'], correct: 'I like cats' },
     { words: ['The', 'sun', 'is', 'big'], correct: 'The sun is big' },
@@ -21,7 +22,7 @@ const CONTENT: any = {
     { words: ['They', 'will', 'visit', 'us', 'tomorrow'], correct: 'They will visit us tomorrow' },
     { words: ['The', 'movie', 'was', 'really', 'exciting'], correct: 'The movie was really exciting' },
     { words: ['I', 'have', 'been', 'studying', 'English'], correct: 'I have been studying English' },
-    { words: ['He', 'doesn\'t', 'like', 'rainy', 'days'], correct: 'He doesn\'t like rainy days' },
+    { words: ['He', 'does', 'not', 'like', 'rainy', 'days'], correct: 'He does not like rainy days' },
   ],
   masters: [
     { words: ['Despite', 'the', 'rain', 'they', 'continued', 'walking'], correct: 'Despite the rain they continued walking' },
@@ -43,34 +44,69 @@ function shuffle<T>(arr: T[]): T[] {
   const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a;
 }
 
-export default function SentenceGame({ profile, userId, onFinish }: { profile: any; userId: string; onFinish: () => void }) {
+export default function SentenceGame({ profile, userId, onFinish }: { profile: { track: string }; userId: string; onFinish: () => void }) {
   const track = profile.track || 'explorers';
   const [questions] = useState(() => shuffle(CONTENT[track] || CONTENT.explorers).slice(0, ROUNDS));
   const [idx, setIdx] = useState(0);
   const [placed, setPlaced] = useState<string[]>([]);
-  const [pool, setPool] = useState<string[]>(() => shuffle(questions[0]?.words || []));
+  const [pool, setPool] = useState<string[]>(() => {
+    const firstQ = shuffle(CONTENT[track] || CONTENT.explorers).slice(0, ROUNDS)[0];
+    return firstQ ? shuffle([...firstQ.words]) : [];
+  });
   const [result, setResult] = useState<boolean | null>(null);
   const [score, setScore] = useState({ c: 0, w: 0 });
   const [streak, setStreak] = useState(0);
   const [done, setDone] = useState(false);
   const [timer, setTimer] = useState(0);
   const [saving, setSaving] = useState(false);
-  const timerRef = useRef<any>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => { timerRef.current = setInterval(() => setTimer(t => t + 1), 1000); return () => clearInterval(timerRef.current); }, []);
+  useEffect(() => {
+    timerRef.current = setInterval(() => setTimer(t => t + 1), 1000);
+    sounds.gameStart();
+    // Set pool from actual questions state
+    if (questions[0]) setPool(shuffle([...questions[0].words]));
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, []);
 
-  const addWord = (w: string, wi: number) => { if (result !== null) return; setPlaced(p => [...p, w]); setPool(p => p.filter((_, i) => i !== wi)); };
-  const removeWord = (wi: number) => { if (result !== null) return; setPool(p => [...p, placed[wi]]); setPlaced(p => p.filter((_, i) => i !== wi)); };
+  // Auto-speak the sentence
+  useEffect(() => {
+    if (questions[idx]) {
+      setTimeout(() => sounds.speak(questions[idx].correct), 400);
+    }
+  }, [idx]);
+
+  const addWord = (w: string, wi: number) => {
+    if (result !== null) return;
+    sounds.tap();
+    setPlaced(p => [...p, w]);
+    setPool(p => p.filter((_, i) => i !== wi));
+  };
+
+  const removeWord = (wi: number) => {
+    if (result !== null) return;
+    sounds.tap();
+    setPool(p => [...p, placed[wi]]);
+    setPlaced(p => p.filter((_, i) => i !== wi));
+  };
 
   const check = () => {
     if (result !== null) return;
     const ok = placed.join(' ') === questions[idx].correct;
     setResult(ok);
-    if (ok) { setStreak(s => s + 1); setScore(s => ({ ...s, c: s.c + 1 })); }
-    else { setStreak(0); setScore(s => ({ ...s, w: s.w + 1 })); }
+    if (ok) { setStreak(s => s + 1); setScore(s => ({ ...s, c: s.c + 1 })); sounds.correct(); }
+    else { setStreak(0); setScore(s => ({ ...s, w: s.w + 1 })); sounds.wrong(); sounds.speak(questions[idx].correct); }
     setTimeout(() => {
-      if (idx + 1 >= questions.length) { clearInterval(timerRef.current); setDone(true); }
-      else { const next = idx + 1; setIdx(next); setPlaced([]); setPool(shuffle(questions[next].words)); setResult(null); }
+      if (idx + 1 >= questions.length) {
+        if (timerRef.current) clearInterval(timerRef.current);
+        setDone(true);
+      } else {
+        const next = idx + 1;
+        setIdx(next);
+        setPlaced([]);
+        setPool(shuffle([...questions[next].words]));
+        setResult(null);
+      }
     }, ok ? 700 : 1500);
   };
 
@@ -81,9 +117,9 @@ export default function SentenceGame({ profile, userId, onFinish }: { profile: a
   };
 
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
-  const pct = Math.round((score.c / (score.c + score.w)) * 100) || 0;
+  const pct = (score.c + score.w) > 0 ? Math.round((score.c / (score.c + score.w)) * 100) : 0;
   const grade = pct === 100 ? 'S' : pct >= 80 ? 'A' : pct >= 60 ? 'B' : pct >= 40 ? 'C' : 'D';
-  const gc: any = { S: '#f59e0b', A: '#22c55e', B: '#6366f1', C: '#3b82f6', D: '#ef4444' };
+  const gc: Record<string, string> = { S: '#f59e0b', A: '#22c55e', B: '#6366f1', C: '#3b82f6', D: '#ef4444' };
 
   if (done) return (
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'linear-gradient(135deg,#0f0c29,#302b63,#24243e)' }}>
@@ -133,8 +169,17 @@ export default function SentenceGame({ profile, userId, onFinish }: { profile: a
       </div>
       <div className="flex-1 flex flex-col items-center justify-center max-w-md mx-auto w-full">
         <div className="text-4xl mb-2">🔧</div>
-        <h3 className="text-lg font-black text-white mb-4">Build the Sentence!</h3>
-        <div className="w-full min-h-[56px] rounded-2xl p-3 mb-4 flex flex-wrap gap-2" style={{ background: 'rgba(255,255,255,0.05)', border: `1px solid ${result === true ? '#22c55e' : result === false ? '#ef4444' : 'rgba(255,255,255,0.1)'}` }}>
+        <h3 className="text-lg font-black text-white mb-2">Build the Sentence!</h3>
+
+        {/* Listen button */}
+        <button onClick={() => sounds.speak(questions[idx].correct)}
+          className="mb-4 px-5 py-2 rounded-full text-sm font-bold transition-all hover:scale-105 active:scale-95"
+          style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: 'white', boxShadow: '0 4px 15px rgba(99,102,241,0.3)' }}>
+          🔊 Listen to sentence
+        </button>
+
+        <div className="w-full min-h-[56px] rounded-2xl p-3 mb-4 flex flex-wrap gap-2"
+          style={{ background: 'rgba(255,255,255,0.05)', border: `1px solid ${result === true ? '#22c55e' : result === false ? '#ef4444' : 'rgba(255,255,255,0.1)'}` }}>
           {placed.length === 0 && <span className="text-xs text-slate-500">Tap words to build...</span>}
           {placed.map((w, i) => (
             <button key={i} onClick={() => removeWord(i)} className="px-3 py-1.5 rounded-lg text-sm font-bold transition-all hover:scale-105"
