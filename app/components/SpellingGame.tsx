@@ -3,7 +3,12 @@ import { useState, useEffect, useRef } from 'react';
 import { completeGame } from '../lib/api';
 import { sounds } from '../lib/sounds';
 
-const CONTENT: any = {
+interface Question {
+  word: string;
+  hint: string;
+}
+
+const CONTENT: Record<string, Question[]> = {
   explorers: [
     { word: 'CAT', hint: '🐱 A furry pet' }, { word: 'DOG', hint: '🐶 Best friend' },
     { word: 'SUN', hint: '🌞 Bright in sky' }, { word: 'BIG', hint: '📏 Not small' },
@@ -27,15 +32,17 @@ const CONTENT: any = {
   ],
 };
 
-const ROUNDS = 8; const XP_PER = 10; const LINGO_PER = 5;
+const ROUNDS = 8;
+const XP_PER = 10;
+const LINGO_PER = 5;
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a;
 }
 
-export default function SpellingGame({ profile, userId, onFinish }: { profile: any; userId: string; onFinish: () => void }) {
+export default function SpellingGame({ profile, userId, onFinish }: { profile: { track: string }; userId: string; onFinish: () => void }) {
   const track = profile.track || 'explorers';
-  const [questions] = useState(() => shuffle(CONTENT[track] || CONTENT.explorers).slice(0, ROUNDS));
+  const [questions] = useState<Question[]>(() => shuffle(CONTENT[track] || CONTENT.explorers).slice(0, ROUNDS));
   const [idx, setIdx] = useState(0);
   const [input, setInput] = useState('');
   const [result, setResult] = useState<boolean | null>(null);
@@ -44,23 +51,29 @@ export default function SpellingGame({ profile, userId, onFinish }: { profile: a
   const [done, setDone] = useState(false);
   const [timer, setTimer] = useState(0);
   const [saving, setSaving] = useState(false);
-  const timerRef = useRef<any>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => { timerRef.current = setInterval(() => setTimer(t => t + 1), 1000); sounds.gameStart(); return () => clearInterval(timerRef.current); }, []);
+  useEffect(() => {
+    timerRef.current = setInterval(() => setTimer(t => t + 1), 1000);
+    sounds.gameStart();
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, []);
 
   // Auto-speak the word
   useEffect(() => {
-    if (questions[idx]) setTimeout(() => sounds.speak(questions[idx].word), 400);
-  }, [idx]);
+    const q = questions[idx];
+    if (q) setTimeout(() => sounds.speak(q.word), 400);
+  }, [idx, questions]);
 
   const submit = () => {
     if (!input.trim() || result !== null) return;
-    const ok = input.trim().toUpperCase() === questions[idx].word.toUpperCase();
+    const q = questions[idx];
+    const ok = input.trim().toUpperCase() === q.word.toUpperCase();
     setResult(ok);
     if (ok) { setStreak(s => s + 1); setScore(s => ({ ...s, c: s.c + 1 })); sounds.correct(); }
-    else { setStreak(0); setScore(s => ({ ...s, w: s.w + 1 })); sounds.wrong(); sounds.speak(questions[idx].word); }
+    else { setStreak(0); setScore(s => ({ ...s, w: s.w + 1 })); sounds.wrong(); sounds.speak(q.word); }
     setTimeout(() => {
-      if (idx + 1 >= questions.length) { clearInterval(timerRef.current); setDone(true); }
+      if (idx + 1 >= questions.length) { if (timerRef.current) clearInterval(timerRef.current); setDone(true); }
       else { setIdx(i => i + 1); setInput(''); setResult(null); }
     }, ok ? 700 : 1200);
   };
@@ -72,9 +85,9 @@ export default function SpellingGame({ profile, userId, onFinish }: { profile: a
   };
 
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
-  const pct = Math.round((score.c / (score.c + score.w)) * 100) || 0;
+  const pct = (score.c + score.w) > 0 ? Math.round((score.c / (score.c + score.w)) * 100) : 0;
   const grade = pct === 100 ? 'S' : pct >= 80 ? 'A' : pct >= 60 ? 'B' : pct >= 40 ? 'C' : 'D';
-  const gc: any = { S: '#f59e0b', A: '#22c55e', B: '#6366f1', C: '#3b82f6', D: '#ef4444' };
+  const gc: Record<string, string> = { S: '#f59e0b', A: '#22c55e', B: '#6366f1', C: '#3b82f6', D: '#ef4444' };
 
   if (done) return (
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'linear-gradient(135deg,#0f0c29,#302b63,#24243e)' }}>
@@ -127,11 +140,10 @@ export default function SpellingGame({ profile, userId, onFinish }: { profile: a
       <div className="flex-1 flex flex-col items-center justify-center max-w-md mx-auto w-full">
         <div className="text-5xl mb-3">🐝</div>
         <h3 className="text-xl font-black text-white mb-2">Spelling Bee</h3>
-        
+
         <div className="rounded-2xl p-5 mb-4 text-center w-full" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
           <p className="text-sm mb-1 text-indigo-300">Spell this word:</p>
           <p className="text-lg mb-3" style={{ color: '#fbbf24' }}>{q.hint}</p>
-          {/* Listen button */}
           <button onClick={() => sounds.speak(q.word)}
             className="px-6 py-2 rounded-full text-sm font-bold transition-all hover:scale-105 active:scale-95"
             style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: 'white', boxShadow: '0 4px 15px rgba(99,102,241,0.3)' }}>
