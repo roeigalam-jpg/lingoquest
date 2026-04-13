@@ -1,7 +1,8 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { sounds } from '../lib/sounds';
 import { t, Lang } from '../lib/i18n';
+import { supabase } from '../lib/supabase';
 import WorldMap from './WorldMap';
 import WordMatchGame from './WordMatchGame';
 import SpellingGame from './SpellingGame';
@@ -29,26 +30,67 @@ const SKIN_COLORS: Record<string, string> = {
   skin_blue: '#3b82f6', skin_fire: '#ef4444', skin_gold: '#f59e0b', skin_purple: '#8b5cf6',
 };
 
+const DAILY_QUESTS = [
+  { id: 'play3', titleHe: 'שחק 3 משחקים', titleEn: 'Play 3 games', target: 3, field: 'games_played', reward: 100, emoji: '🎮' },
+  { id: 'win1', titleHe: 'נצח בזירה', titleEn: 'Win an Arena match', target: 1, field: 'arena_wins', reward: 150, emoji: '⚔️' },
+  { id: 'spell5', titleHe: 'אייתו 5 מילים נכון', titleEn: 'Spell 5 words correctly', target: 5, field: 'games_played', reward: 80, emoji: '🐝' },
+];
+
 export default function Dashboard({ profile, userId, refreshProfile, onLogout, lang, setLang }: any) {
   const [tab, setTab] = useState('home');
   const [activeGame, setActiveGame] = useState<string | null>(null);
+  const [showLevelUp, setShowLevelUp] = useState(false);
+  const [prevLevel, setPrevLevel] = useState(profile.level);
+  const [dailyStreak, setDailyStreak] = useState(0);
+  const [showXPPopup, setShowXPPopup] = useState<number | null>(null);
   const track = TRACKS[profile.track] || TRACKS.explorers;
   const xpToNext = profile.level * 100;
   const xpPct = Math.min((profile.xp / xpToNext) * 100, 100);
   const isHe = lang === 'he';
-  const referralLink = `https://lingoquest-75vj.onrender.com/?ref=${profile.referral_code}`;
-  const shareTextHe = `🎮 היי! אני משחק ב-LingoQuest - משחק מגניב ללימוד אנגלית!\n\n🎁 הצטרף דרך הלינק שלי וקבל 200 מטבעות בונוס בחינם!\n\n🌟 ${referralLink}\n\n⭐ גם אני מקבל בונוס כשאתה מצטרף - בוא נשחק ביחד!`;
-  const shareTextEn = `🎮 Hey! I'm playing LingoQuest - an awesome game to learn English!\n\n🎁 Join with my link and get 200 bonus Lingos for FREE!\n\n🌟 ${referralLink}\n\n⭐ I also get a bonus when you join - let's play together!`;
-  const shareText = isHe ? shareTextHe : shareTextEn;
-  const whatsappMsg = encodeURIComponent(shareText);
-  const [copied, setCopied] = useState(false);
 
-  // Get equipped items
   const equipped = profile.equipped || {};
   const equippedSkin = equipped.skin;
   const equippedHat = equipped.hat;
   const equippedPet = equipped.pet;
   const avatarColor = equippedSkin ? (SKIN_COLORS[equippedSkin] || track.color) : track.color;
+
+  const referralLink = `https://lingoquest-75vj.onrender.com/?ref=${profile.referral_code}`;
+  const shareTextHe = `🎮 היי! אני משחק ב-LingoQuest - משחק מגניב ללימוד אנגלית!\n\n🎁 הצטרף דרך הלינק שלי וקבל 200 מטבעות בונוס בחינם!\n\n🌟 ${referralLink}\n\n⭐ גם אני מקבל בונוס כשאתה מצטרף - בוא נשחק ביחד!`;
+  const shareTextEn = `🎮 Hey! I'm playing LingoQuest - learn English!\n\n🎁 Join and get 200 bonus Lingos!\n\n🌟 ${referralLink}`;
+  const shareText = isHe ? shareTextHe : shareTextEn;
+  const whatsappMsg = encodeURIComponent(shareText);
+  const [copied, setCopied] = useState(false);
+
+  // Check for level up
+  useEffect(() => {
+    if (profile.level > prevLevel) {
+      setShowLevelUp(true);
+      sounds.levelUp();
+      setTimeout(() => setShowLevelUp(false), 3000);
+    }
+    setPrevLevel(profile.level);
+  }, [profile.level]);
+
+  // Calculate daily streak (simplified - based on games today)
+  useEffect(() => {
+    const today = new Date().toDateString();
+    const stored = localStorage.getItem('lq_last_play');
+    const streak = parseInt(localStorage.getItem('lq_streak') || '0');
+    if (stored === today) {
+      setDailyStreak(streak);
+    } else {
+      const yesterday = new Date(Date.now() - 86400000).toDateString();
+      if (stored === yesterday) {
+        const newStreak = streak + 1;
+        localStorage.setItem('lq_streak', String(newStreak));
+        setDailyStreak(newStreak);
+      } else {
+        localStorage.setItem('lq_streak', '1');
+        setDailyStreak(1);
+      }
+      localStorage.setItem('lq_last_play', today);
+    }
+  }, []);
 
   const NAV_ITEMS = [
     { id: 'home', icon: '🏠', label: t('nav.home', lang) },
@@ -59,8 +101,20 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
     { id: 'board', icon: '🏆', label: t('nav.board', lang) },
   ];
 
+  const onGameFinish = async () => {
+    const oldXP = profile.xp;
+    setActiveGame(null);
+    await refreshProfile();
+    // Show XP popup
+    const gained = profile.xp - oldXP;
+    if (gained > 0) {
+      setShowXPPopup(gained);
+      setTimeout(() => setShowXPPopup(null), 2000);
+    }
+  };
+
   if (activeGame) {
-    const gameProps = { profile, userId, onFinish: async () => { setActiveGame(null); await refreshProfile(); } };
+    const gameProps = { profile, userId, onFinish: onGameFinish };
     switch (activeGame) {
       case 'word-match': return <WordMatchGame {...gameProps} />;
       case 'spelling': return <SpellingGame {...gameProps} />;
@@ -74,6 +128,27 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
 
   return (
     <div style={{ background: 'linear-gradient(135deg,#0f0c29,#302b63,#24243e)', minHeight: '100vh' }}>
+      {/* Level Up Celebration */}
+      {showLevelUp && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
+          <div className="text-center animate-bounce">
+            <div className="text-7xl mb-3">🎉</div>
+            <div className="text-3xl font-black text-white mb-1">LEVEL UP!</div>
+            <div className="text-5xl font-black" style={{ color: '#fbbf24' }}>{profile.level}</div>
+            <div className="text-lg text-indigo-300">{isHe ? 'כל הכבוד!' : 'Amazing!'}</div>
+          </div>
+        </div>
+      )}
+
+      {/* XP Popup */}
+      {showXPPopup && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+          <div className="text-2xl font-black animate-bounce" style={{ color: '#fbbf24', textShadow: '0 0 20px rgba(245,158,11,0.5)' }}>
+            +{showXPPopup} XP ⭐
+          </div>
+        </div>
+      )}
+
       <div className="flex justify-between px-4 pt-3">
         <button onClick={() => { sounds.tap(); setLang(isHe ? 'en' : 'he'); }}
           className="text-xs px-3 py-1.5 rounded-lg font-bold" style={{ background: 'rgba(255,255,255,0.08)', color: '#a5b4fc' }}>
@@ -87,7 +162,6 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
           {/* Avatar + Profile */}
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-3">
-              {/* Avatar with equipped items */}
               <div className="relative">
                 <div className="w-16 h-16 rounded-full flex items-center justify-center text-2xl"
                   style={{ background: `${avatarColor}30`, border: `3px solid ${avatarColor}`, boxShadow: `0 0 20px ${avatarColor}30` }}>
@@ -108,6 +182,18 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
               <div className="text-2xl font-black text-white">{profile.level}</div>
             </div>
           </div>
+
+          {/* Daily Streak Banner */}
+          {dailyStreak > 0 && (
+            <div className="rounded-2xl p-3 mb-4 flex items-center gap-3" style={{ background: 'linear-gradient(135deg,rgba(245,158,11,0.15),rgba(239,68,68,0.1))', border: '1px solid rgba(245,158,11,0.3)' }}>
+              <div className="text-3xl">🔥</div>
+              <div className="flex-1">
+                <div className="text-sm font-black text-white">{dailyStreak} {isHe ? 'ימים ברצף!' : 'Day Streak!'}</div>
+                <div className="text-xs text-slate-400">{isHe ? 'תמשיך לשחק כל יום!' : 'Keep playing every day!'}</div>
+              </div>
+              <div className="text-xs font-bold px-2 py-1 rounded-lg" style={{ background: 'rgba(245,158,11,0.2)', color: '#fbbf24' }}>x{Math.min(dailyStreak, 5)} {isHe ? 'בונוס' : 'bonus'}</div>
+            </div>
+          )}
 
           {/* XP Bar */}
           <div className="rounded-2xl p-4 mb-4" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
@@ -138,6 +224,32 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
             {t('dash.play', lang)}
           </button>
 
+          {/* Daily Quests */}
+          <div className="rounded-2xl p-4 mb-4" style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.08),rgba(168,85,247,0.08))', border: '1px solid rgba(99,102,241,0.2)' }}>
+            <div className="text-xs font-bold mb-3 text-indigo-300">📋 {isHe ? 'משימות יומיות' : 'Daily Quests'}</div>
+            <div className="space-y-2">
+              {DAILY_QUESTS.map(quest => {
+                const progress = Math.min((profile[quest.field] || 0), quest.target);
+                const done = progress >= quest.target;
+                return (
+                  <div key={quest.id} className="flex items-center gap-3 rounded-xl p-2.5" style={{ background: done ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.03)', border: `1px solid ${done ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.05)'}` }}>
+                    <span className="text-xl">{quest.emoji}</span>
+                    <div className="flex-1">
+                      <div className="text-xs font-bold text-white">{isHe ? quest.titleHe : quest.titleEn}</div>
+                      <div className="h-1.5 rounded-full mt-1 overflow-hidden" style={{ background: 'rgba(255,255,255,0.1)' }}>
+                        <div className="h-full rounded-full transition-all" style={{ width: `${(progress / quest.target) * 100}%`, background: done ? '#22c55e' : '#6366f1' }} />
+                      </div>
+                    </div>
+                    <div className="text-xs font-bold" style={{ color: done ? '#34d399' : '#94a3b8' }}>
+                      {done ? '✅' : `${progress}/${quest.target}`}
+                    </div>
+                    <div className="text-xs font-bold" style={{ color: '#fbbf24' }}>💰{quest.reward}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Stats */}
           <div className="rounded-2xl p-4 mb-4" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
             <div className="text-xs font-bold mb-2 text-indigo-300">📊 {t('dash.stats', lang)}</div>
@@ -148,7 +260,7 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
             </div>
           </div>
 
-          {/* Equipped Items Display */}
+          {/* Equipped Items */}
           {(equippedSkin || equippedHat || equippedPet) && (
             <div className="rounded-2xl p-4 mb-4" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
               <div className="text-xs font-bold mb-2 text-indigo-300">🎒 {isHe ? 'פריטים מצוידים' : 'Equipped Items'}</div>
@@ -184,14 +296,15 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
       {tab === 'shop' && <Shop profile={profile} userId={userId} refreshProfile={refreshProfile} />}
       {tab === 'board' && <Leaderboard profile={profile} userId={userId} onChallenge={(player) => { sounds.gameStart(); setTab('multi'); }} />}
 
+      {/* Bottom Nav */}
       <div className="fixed bottom-0 left-0 right-0 flex justify-around items-center py-2 px-1"
         style={{ background: 'rgba(15,12,41,0.95)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.08)', zIndex: 50 }}>
         {NAV_ITEMS.map(item => (
           <button key={item.id} onClick={() => { sounds.tap(); setTab(item.id); }}
-            className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all"
+            className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all"
             style={{ background: tab === item.id ? 'rgba(99,102,241,0.2)' : 'transparent', transform: tab === item.id ? 'scale(1.1)' : 'scale(1)' }}>
-            <span className="text-xl">{item.icon}</span>
-            <span className="text-[10px] font-bold" style={{ color: tab === item.id ? '#a5b4fc' : '#64748b' }}>{item.label}</span>
+            <span className="text-lg">{item.icon}</span>
+            <span className="text-[9px] font-bold" style={{ color: tab === item.id ? '#a5b4fc' : '#64748b' }}>{item.label}</span>
           </button>
         ))}
       </div>
