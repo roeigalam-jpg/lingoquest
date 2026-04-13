@@ -9,6 +9,7 @@ import SentenceGame from './SentenceGame';
 import ListeningGame from './ListeningGame';
 import ArenaGame from './ArenaGame';
 import DragMatchGame from './DragMatchGame';
+import MultiplayerGame from './MultiplayerGame';
 import Shop from './Shop';
 import Leaderboard from './Leaderboard';
 
@@ -53,6 +54,7 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
     { id: 'home', icon: '🏠', label: t('nav.home', lang) },
     { id: 'map', icon: '🗺️', label: t('nav.map', lang) },
     { id: 'arena', icon: '⚔️', label: t('nav.arena', lang) },
+    { id: 'multi', icon: '🌐', label: isHe ? 'מולטי' : 'Multi' },
     { id: 'shop', icon: '🛒', label: t('nav.shop', lang) },
     { id: 'board', icon: '🏆', label: t('nav.board', lang) },
   ];
@@ -178,6 +180,7 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
 
       {tab === 'map' && <WorldMap profile={profile} onSelectGame={(game) => { sounds.gameStart(); setActiveGame(game); }} />}
       {tab === 'arena' && <ArenaGame profile={profile} userId={userId} onFinish={async () => { setTab('home'); await refreshProfile(); }} />}
+      {tab === 'multi' && <MultiplayerGame profile={profile} userId={userId} onFinish={async () => { setTab('home'); await refreshProfile(); }} />}
       {tab === 'shop' && <Shop profile={profile} userId={userId} refreshProfile={refreshProfile} />}
       {tab === 'board' && <Leaderboard profile={profile} userId={userId} />}
 
