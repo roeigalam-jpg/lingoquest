@@ -1,7 +1,7 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { createProfile, generateReferralCode, calculateTrack } from '../lib/api';
+import { createProfile, generateReferralCode, calculateTrack, processReferral } from '../lib/api';
 import { sounds } from '../lib/sounds';
 import { t, Lang } from '../lib/i18n';
 
@@ -11,14 +11,36 @@ export default function Register({ user, onRegistered, onNeedAuth, setUser, lang
   const [errors, setErrors] = useState<any>({});
   const [submitting, setSubmitting] = useState(false);
   const [step, setStep] = useState<'form' | 'check_email'>('form');
+  const [refCode, setRefCode] = useState<string | null>(null);
   const isHe = lang === 'he';
+
+  // Detect referral code from URL
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get('ref');
+      if (ref) {
+        setRefCode(ref);
+      }
+    } catch (_) {}
+  }, []);
 
   const update = (f: string, v: string) => {
     setForm(p => ({ ...p, [f]: v }));
     setErrors((p: any) => ({ ...p, [f]: null, general: null }));
   };
 
-  // Quick signup - no email, uses anonymous auth
+  // Process referral after signup
+  const handleReferral = async (newUserId: string) => {
+    if (!refCode) return;
+    try {
+      await processReferral(newUserId, refCode);
+    } catch (e) {
+      console.error('Referral error:', e);
+    }
+  };
+
+  // Quick signup
   const handleQuickSignup = async () => {
     const e: any = {};
     if (!form.nickname.trim() || form.nickname.trim().length < 2) e.nickname = isHe ? 'לפחות 2 תווים' : 'At least 2 characters';
@@ -30,7 +52,6 @@ export default function Register({ user, onRegistered, onNeedAuth, setUser, lang
 
     setSubmitting(true);
     try {
-      // Create a fake email from nickname for Supabase auth
       const fakeEmail = `${form.nickname.trim().toLowerCase().replace(/[^a-z0-9]/g, '')}${Date.now()}@lingoquest.game`;
       const { data, error } = await supabase.auth.signUp({ email: fakeEmail, password: form.password });
       if (error) throw error;
@@ -44,6 +65,8 @@ export default function Register({ user, onRegistered, onNeedAuth, setUser, lang
           track,
           referralCode: generateReferralCode(),
         });
+        // Process referral bonus
+        await handleReferral(data.user.id);
         sounds.gameStart();
         onRegistered(profile);
       }
@@ -77,6 +100,7 @@ export default function Register({ user, onRegistered, onNeedAuth, setUser, lang
             nickname: form.nickname.trim(), email: form.email, birthDate: form.birthDate,
             track, referralCode: generateReferralCode(),
           });
+          await handleReferral(data.user.id);
           if (data.session) { sounds.gameStart(); onRegistered(profile); }
           else { setStep('check_email'); }
         } catch (profileErr: any) {
@@ -95,19 +119,11 @@ export default function Register({ user, onRegistered, onNeedAuth, setUser, lang
     if (!form.email || !form.password) { setErrors({ general: isHe ? 'הכנס אימייל/כינוי וסיסמה' : 'Enter email/nickname and password' }); return; }
     setSubmitting(true);
     try {
-      // Try login with email directly
       let loginEmail = form.email;
-      // If it doesn't look like email, try to find the user's fake email
       if (!form.email.includes('@')) {
-        // Search by nickname in profiles
         const { data: profiles } = await supabase.from('profiles').select('email').eq('nickname', form.email).limit(1);
-        if (profiles && profiles.length > 0) {
-          loginEmail = profiles[0].email;
-        } else {
-          setErrors({ general: isHe ? 'משתמש לא נמצא' : 'User not found' });
-          setSubmitting(false);
-          return;
-        }
+        if (profiles && profiles.length > 0) { loginEmail = profiles[0].email; }
+        else { setErrors({ general: isHe ? 'משתמש לא נמצא' : 'User not found' }); setSubmitting(false); return; }
       }
       const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password: form.password });
       if (error) throw error;
@@ -139,7 +155,6 @@ export default function Register({ user, onRegistered, onNeedAuth, setUser, lang
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-8 relative" style={{ background: 'linear-gradient(135deg,#0f0c29,#302b63,#24243e)' }}>
-      {/* Language Toggle */}
       <button onClick={() => { sounds.tap(); setLang(isHe ? 'en' : 'he'); }}
         className="absolute top-4 right-4 px-4 py-2 rounded-xl text-sm font-bold transition-all hover:scale-105"
         style={{ background: 'rgba(255,255,255,0.1)', color: '#a5b4fc', border: '1px solid rgba(255,255,255,0.15)' }}>
@@ -147,6 +162,15 @@ export default function Register({ user, onRegistered, onNeedAuth, setUser, lang
       </button>
 
       <div className="w-full max-w-md" dir={isHe ? 'rtl' : 'ltr'}>
+        {/* Referral Banner */}
+        {refCode && mode !== 'login' && (
+          <div className="mb-4 rounded-2xl p-4 text-center" style={{ background: 'linear-gradient(135deg,rgba(34,197,94,0.15),rgba(99,102,241,0.15))', border: '1px solid rgba(34,197,94,0.3)' }}>
+            <div className="text-2xl mb-1">🎁</div>
+            <p className="text-sm font-bold text-white">{isHe ? 'הוזמנת על ידי חבר!' : 'You were invited by a friend!'}</p>
+            <p className="text-xs text-green-300">{isHe ? '200 מטבעות בונוס בהרשמה! 💰' : '200 bonus Lingos on signup! 💰'}</p>
+          </div>
+        )}
+
         <div className="rounded-3xl p-7" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
           <div className="text-center mb-5">
             <div className="text-4xl mb-2">{mode === 'login' ? '🔑' : '🏰'}</div>
@@ -159,7 +183,6 @@ export default function Register({ user, onRegistered, onNeedAuth, setUser, lang
           {errors.general && <p className="text-sm text-red-400 text-center mb-3">{errors.general}</p>}
 
           <div className="space-y-3">
-            {/* Nickname - always shown for quick & email_register */}
             {mode !== 'login' && (
               <div>
                 <label className="block text-xs font-bold mb-1 text-indigo-300">🎭 {isHe ? 'כינוי' : 'NICKNAME'}</label>
@@ -170,7 +193,6 @@ export default function Register({ user, onRegistered, onNeedAuth, setUser, lang
               </div>
             )}
 
-            {/* Email - only for email_register and login */}
             {(mode === 'email_register' || mode === 'login') && (
               <div>
                 <label className="block text-xs font-bold mb-1 text-indigo-300">
@@ -184,7 +206,6 @@ export default function Register({ user, onRegistered, onNeedAuth, setUser, lang
               </div>
             )}
 
-            {/* Birth Date - for quick & email_register */}
             {mode !== 'login' && (
               <div>
                 <label className="block text-xs font-bold mb-1 text-indigo-300">🎂 {isHe ? 'תאריך לידה' : 'BIRTH DATE'}</label>
@@ -200,7 +221,6 @@ export default function Register({ user, onRegistered, onNeedAuth, setUser, lang
               </div>
             )}
 
-            {/* Password - always */}
             <div>
               <label className="block text-xs font-bold mb-1 text-indigo-300">🔒 {isHe ? 'סיסמה' : 'PASSWORD'}</label>
               <input type="password" placeholder={isHe ? 'לפחות 6 תווים' : 'Min 6 characters'} value={form.password}
@@ -209,14 +229,8 @@ export default function Register({ user, onRegistered, onNeedAuth, setUser, lang
               {errors.password && <p className="text-xs mt-1 text-red-400">{errors.password}</p>}
             </div>
 
-            {/* Submit button */}
             <button
-              onClick={() => {
-                sounds.click();
-                if (mode === 'quick') handleQuickSignup();
-                else if (mode === 'email_register') handleEmailRegister();
-                else handleLogin();
-              }}
+              onClick={() => { sounds.click(); if (mode === 'quick') handleQuickSignup(); else if (mode === 'email_register') handleEmailRegister(); else handleLogin(); }}
               disabled={submitting}
               className="w-full py-4 rounded-xl text-white font-bold text-base mt-2 transition-all hover:scale-[1.02] disabled:opacity-60"
               style={{ background: submitting ? 'rgba(99,102,241,0.4)' : 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}>
@@ -226,7 +240,6 @@ export default function Register({ user, onRegistered, onNeedAuth, setUser, lang
                 (isHe ? '🔑 התחבר' : '🔑 Login')}
             </button>
 
-            {/* Mode switchers */}
             <div className="flex flex-col gap-1 pt-2">
               {mode === 'quick' && (
                 <>

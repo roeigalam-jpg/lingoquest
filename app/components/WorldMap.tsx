@@ -1,10 +1,11 @@
 'use client';
 
 const ISLANDS = [
-  { id: 'starter', name: 'Starter Island', emoji: '🏝️', unlockLevel: 1, color: '#22c55e', game: 'word-match', gameLabel: 'Word Match 🎯', desc: 'Begin your journey!' },
-  { id: 'animals', name: 'Animal Kingdom', emoji: '🦁', unlockLevel: 2, color: '#f59e0b', game: 'spelling', gameLabel: 'Spelling Bee 🐝', desc: 'Master animal words!' },
-  { id: 'food', name: 'Food Valley', emoji: '🍕', unlockLevel: 4, color: '#ef4444', game: 'sentence', gameLabel: 'Sentence Builder 🔧', desc: 'Delicious vocabulary!' },
-  { id: 'mystery', name: 'Mystery Island', emoji: '🔮', unlockLevel: 6, color: '#8b5cf6', game: 'listening', gameLabel: 'Listening 👂', desc: 'Unlock the unknown!' },
+  { id: 'starter', name: 'Starter Island', emoji: '🏝️', unlockLevel: 1, color: '#22c55e', game: 'word-match', gameLabel: 'Word Match 🎯', desc: 'Begin your journey!', descHe: 'התחל את המסע!' },
+  { id: 'animals', name: 'Animal Kingdom', emoji: '🦁', unlockLevel: 2, color: '#f59e0b', game: 'spelling', gameLabel: 'Spelling Bee 🐝', desc: 'Master animal words!', descHe: 'שלוט במילות חיות!' },
+  { id: 'match', name: 'Match Valley', emoji: '🎯', unlockLevel: 3, color: '#ec4899', game: 'drag-match', gameLabel: 'Drag & Match 🖐️', desc: 'Connect words to pictures!', descHe: 'חבר מילים לתמונות!' },
+  { id: 'food', name: 'Food Valley', emoji: '🍕', unlockLevel: 4, color: '#ef4444', game: 'sentence', gameLabel: 'Sentence Builder 🔧', desc: 'Build sentences!', descHe: 'בנה משפטים!' },
+  { id: 'mystery', name: 'Mystery Island', emoji: '🔮', unlockLevel: 6, color: '#8b5cf6', game: 'listening', gameLabel: 'Listening 👂', desc: 'Train your ears!', descHe: 'אמן את האוזניים!' },
 ];
 
 export default function WorldMap({ profile, onSelectGame }: { profile: any; onSelectGame: (game: string) => void }) {
@@ -30,7 +31,7 @@ export default function WorldMap({ profile, onSelectGame }: { profile: any; onSe
                 </div>
                 <div className="flex-1">
                   <h3 className="text-base font-black text-white">{island.name}</h3>
-                  <p className="text-xs text-slate-400">{island.desc}</p>
+                  <p className="text-xs text-slate-400">{island.descHe}</p>
                   {locked
                     ? <p className="text-xs mt-1 font-semibold" style={{ color: '#f59e0b' }}>🔒 Level {island.unlockLevel}</p>
                     : <p className="text-xs mt-1 font-semibold" style={{ color: island.color }}>▶ {island.gameLabel}</p>}
