@@ -182,7 +182,7 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
       {tab === 'arena' && <ArenaGame profile={profile} userId={userId} onFinish={async () => { setTab('home'); await refreshProfile(); }} />}
       {tab === 'multi' && <MultiplayerGame profile={profile} userId={userId} onFinish={async () => { setTab('home'); await refreshProfile(); }} />}
       {tab === 'shop' && <Shop profile={profile} userId={userId} refreshProfile={refreshProfile} />}
-      {tab === 'board' && <Leaderboard profile={profile} userId={userId} />}
+      {tab === 'board' && <Leaderboard profile={profile} userId={userId} onChallenge={(player) => { sounds.gameStart(); setTab('multi'); }} />}
 
       <div className="fixed bottom-0 left-0 right-0 flex justify-around items-center py-2 px-1"
         style={{ background: 'rgba(15,12,41,0.95)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.08)', zIndex: 50 }}>

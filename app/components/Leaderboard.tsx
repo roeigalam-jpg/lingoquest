@@ -5,7 +5,7 @@ import { getLeaderboard } from '../lib/api';
 const MEDALS = ['🥇', '🥈', '🥉'];
 const TRACK_EMOJI: any = { explorers: '🧭', voyagers: '🚀', masters: '👑' };
 
-export default function Leaderboard({ profile, userId }: { profile: any; userId: string }) {
+export default function Leaderboard({ profile, userId, onChallenge }: { profile: any; userId: string; onChallenge?: (player: any) => void }) {
   const [lb, setLb] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -13,7 +13,6 @@ export default function Leaderboard({ profile, userId }: { profile: any; userId:
     (async () => {
       try {
         let data = await getLeaderboard(20);
-        // Add fake entries if board is small
         if (!data || data.length < 3) {
           const fakes = [
             { id: 'f1', nickname: 'StarKid', total_xp: 850, level: 9, track: 'explorers' },
@@ -24,22 +23,23 @@ export default function Leaderboard({ profile, userId }: { profile: any; userId:
           ];
           data = [...(data || []), ...fakes].sort((a, b) => b.total_xp - a.total_xp);
         }
-        setLb(data.slice(0, 10));
+        setLb(data.slice(0, 15));
       } catch (e) { console.error(e); }
       setLoading(false);
     })();
   }, []);
 
   return (
-    <div className="px-4 py-5 pb-24 max-w-lg mx-auto">
-      <h2 className="text-xl font-black text-white mb-1">🏆 Leaderboard</h2>
-      <p className="text-xs mb-5 text-slate-400">Top explorers by XP</p>
+    <div className="px-4 py-5 pb-24 max-w-lg mx-auto" dir="rtl">
+      <h2 className="text-xl font-black text-white mb-1">🏆 טבלת דירוג</h2>
+      <p className="text-xs mb-5 text-slate-400">השחקנים הטובים ביותר</p>
       {loading ? (
         <div className="text-center py-10"><span className="text-3xl animate-spin inline-block">⏳</span></div>
       ) : (
         <div className="space-y-2.5">
           {lb.map((entry, i) => {
             const isMe = entry.id === userId;
+            const isReal = !entry.id?.startsWith('f');
             return (
               <div key={entry.id || i} className="rounded-2xl p-4 flex items-center gap-3 transition-all"
                 style={{
@@ -56,12 +56,22 @@ export default function Leaderboard({ profile, userId }: { profile: any; userId:
                 </div>
                 <div className="flex-1">
                   <div className="text-sm font-black text-white">
-                    {entry.nickname} {isMe && <span className="text-xs text-indigo-300">(You)</span>}
+                    {entry.nickname} {isMe && <span className="text-xs text-indigo-300">(אתה)</span>}
                   </div>
-                  <div className="text-xs text-slate-400">Level {entry.level}</div>
+                  <div className="text-xs text-slate-400">רמה {entry.level}</div>
                 </div>
-                <div className="text-right">
-                  <div className="text-sm font-black" style={{ color: '#fbbf24' }}>⭐ {entry.total_xp}</div>
+                <div className="flex items-center gap-2">
+                  <div className="text-left">
+                    <div className="text-sm font-black" style={{ color: '#fbbf24' }}>⭐ {entry.total_xp}</div>
+                  </div>
+                  {/* Challenge button - only for real players, not self */}
+                  {!isMe && isReal && onChallenge && (
+                    <button onClick={() => onChallenge(entry)}
+                      className="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all hover:scale-105"
+                      style={{ background: 'rgba(239,68,68,0.2)', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)' }}>
+                      ⚔️
+                    </button>
+                  )}
                 </div>
               </div>
             );
