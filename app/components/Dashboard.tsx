@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { sounds } from '../lib/sounds';
 import { t, Lang } from '../lib/i18n';
 import { supabase } from '../lib/supabase';
@@ -13,6 +13,7 @@ import DragMatchGame from './DragMatchGame';
 import MultiplayerGame from './MultiplayerGame';
 import Shop from './Shop';
 import Leaderboard from './Leaderboard';
+import Tournament from './Tournament';
 
 const TRACKS: any = {
   explorers: { name: 'Explorers', nameHe: 'חוקרים', emoji: '🧭', color: '#22c55e' },
@@ -32,8 +33,20 @@ const SKIN_COLORS: Record<string, string> = {
 
 const DAILY_QUESTS = [
   { id: 'play3', titleHe: 'שחק 3 משחקים', titleEn: 'Play 3 games', target: 3, field: 'games_played', reward: 100, emoji: '🎮' },
-  { id: 'win1', titleHe: 'נצח בזירה', titleEn: 'Win an Arena match', target: 1, field: 'arena_wins', reward: 150, emoji: '⚔️' },
-  { id: 'spell5', titleHe: 'אייתו 5 מילים נכון', titleEn: 'Spell 5 words correctly', target: 5, field: 'games_played', reward: 80, emoji: '🐝' },
+  { id: 'win1', titleHe: 'נצח בזירה', titleEn: 'Win in Arena', target: 1, field: 'arena_wins', reward: 150, emoji: '⚔️' },
+  { id: 'spell5', titleHe: 'שחק 5 משחקים', titleEn: 'Play 5 games', target: 5, field: 'games_played', reward: 200, emoji: '🐝' },
+];
+
+const ACHIEVEMENTS = [
+  { id: 'first_game', emoji: '🎯', titleHe: 'משחק ראשון', titleEn: 'First Game', check: (p: any) => p.games_played >= 1 },
+  { id: 'ten_games', emoji: '🔟', titleHe: '10 משחקים', titleEn: '10 Games', check: (p: any) => p.games_played >= 10 },
+  { id: 'first_win', emoji: '🏆', titleHe: 'ניצחון ראשון', titleEn: 'First Win', check: (p: any) => p.arena_wins >= 1 },
+  { id: 'five_wins', emoji: '⚔️', titleHe: '5 ניצחונות', titleEn: '5 Wins', check: (p: any) => p.arena_wins >= 5 },
+  { id: 'level5', emoji: '⭐', titleHe: 'רמה 5', titleEn: 'Level 5', check: (p: any) => p.level >= 5 },
+  { id: 'level10', emoji: '🌟', titleHe: 'רמה 10', titleEn: 'Level 10', check: (p: any) => p.level >= 10 },
+  { id: 'rich', emoji: '💰', titleHe: '1000 מטבעות', titleEn: '1000 Lingos', check: (p: any) => p.lingos >= 1000 },
+  { id: 'shopper', emoji: '🛍️', titleHe: '3 פריטים', titleEn: '3 Items', check: (p: any) => (p.inventory || []).length >= 3 },
+  { id: 'inviter', emoji: '🤝', titleHe: 'הזמן חבר', titleEn: 'Invite Friend', check: (p: any) => p.referral_count >= 1 },
 ];
 
 export default function Dashboard({ profile, userId, refreshProfile, onLogout, lang, setLang }: any) {
@@ -43,74 +56,103 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
   const [prevLevel, setPrevLevel] = useState(profile.level);
   const [dailyStreak, setDailyStreak] = useState(0);
   const [showXPPopup, setShowXPPopup] = useState<number | null>(null);
+  const [invite, setInvite] = useState<any>(null);
+  const [showAchievements, setShowAchievements] = useState(false);
+  const inviteChannelRef = useRef<any>(null);
   const track = TRACKS[profile.track] || TRACKS.explorers;
   const xpToNext = profile.level * 100;
   const xpPct = Math.min((profile.xp / xpToNext) * 100, 100);
   const isHe = lang === 'he';
 
   const equipped = profile.equipped || {};
-  const equippedSkin = equipped.skin;
-  const equippedHat = equipped.hat;
-  const equippedPet = equipped.pet;
-  const avatarColor = equippedSkin ? (SKIN_COLORS[equippedSkin] || track.color) : track.color;
+  const avatarColor = equipped.skin ? (SKIN_COLORS[equipped.skin] || track.color) : track.color;
 
   const referralLink = `https://lingoquest-75vj.onrender.com/?ref=${profile.referral_code}`;
-  const shareTextHe = `🎮 היי! אני משחק ב-LingoQuest - משחק מגניב ללימוד אנגלית!\n\n🎁 הצטרף דרך הלינק שלי וקבל 200 מטבעות בונוס בחינם!\n\n🌟 ${referralLink}\n\n⭐ גם אני מקבל בונוס כשאתה מצטרף - בוא נשחק ביחד!`;
-  const shareTextEn = `🎮 Hey! I'm playing LingoQuest - learn English!\n\n🎁 Join and get 200 bonus Lingos!\n\n🌟 ${referralLink}`;
-  const shareText = isHe ? shareTextHe : shareTextEn;
+  const shareText = isHe
+    ? `🎮 היי! אני משחק ב-LingoQuest - משחק מגניב ללימוד אנגלית!\n\n🎁 הצטרף דרך הלינק שלי וקבל 200 מטבעות בונוס בחינם!\n\n🌟 ${referralLink}\n\n⭐ גם אני מקבל בונוס כשאתה מצטרף!`
+    : `🎮 Hey! Join LingoQuest and get 200 bonus Lingos!\n\n🌟 ${referralLink}`;
   const whatsappMsg = encodeURIComponent(shareText);
   const [copied, setCopied] = useState(false);
 
-  // Check for level up
+  // Level up detection
   useEffect(() => {
     if (profile.level > prevLevel) {
-      setShowLevelUp(true);
-      sounds.levelUp();
+      setShowLevelUp(true); sounds.levelUp();
       setTimeout(() => setShowLevelUp(false), 3000);
     }
     setPrevLevel(profile.level);
   }, [profile.level]);
 
-  // Calculate daily streak (simplified - based on games today)
+  // Daily streak
   useEffect(() => {
-    const today = new Date().toDateString();
-    const stored = localStorage.getItem('lq_last_play');
-    const streak = parseInt(localStorage.getItem('lq_streak') || '0');
-    if (stored === today) {
-      setDailyStreak(streak);
-    } else {
-      const yesterday = new Date(Date.now() - 86400000).toDateString();
-      if (stored === yesterday) {
-        const newStreak = streak + 1;
+    try {
+      const today = new Date().toDateString();
+      const stored = localStorage.getItem('lq_last_play');
+      const streak = parseInt(localStorage.getItem('lq_streak') || '0');
+      if (stored === today) { setDailyStreak(streak); }
+      else {
+        const yesterday = new Date(Date.now() - 86400000).toDateString();
+        const newStreak = stored === yesterday ? streak + 1 : 1;
         localStorage.setItem('lq_streak', String(newStreak));
+        localStorage.setItem('lq_last_play', today);
         setDailyStreak(newStreak);
-      } else {
-        localStorage.setItem('lq_streak', '1');
-        setDailyStreak(1);
       }
-      localStorage.setItem('lq_last_play', today);
-    }
+    } catch (_) {}
   }, []);
+
+  // Listen for game invites
+  useEffect(() => {
+    const channel = supabase
+      .channel(`invites-${userId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'game_invites', filter: `to_id=eq.${userId}` },
+        (payload: any) => {
+          if (payload.new && payload.new.status === 'pending') {
+            setInvite(payload.new);
+            sounds.streak();
+          }
+        })
+      .subscribe();
+    inviteChannelRef.current = channel;
+
+    // Also poll for invites
+    const pollInvites = setInterval(async () => {
+      try {
+        const { data } = await supabase.from('game_invites').select('*').eq('to_id', userId).eq('status', 'pending').order('created_at', { ascending: false }).limit(1);
+        if (data && data.length > 0 && !invite) { setInvite(data[0]); sounds.streak(); }
+      } catch (_) {}
+    }, 5000);
+
+    return () => { supabase.removeChannel(channel); clearInterval(pollInvites); };
+  }, [userId]);
+
+  const acceptInvite = async () => {
+    if (!invite) return;
+    await supabase.from('game_invites').update({ status: 'accepted' }).eq('id', invite.id);
+    setInvite(null);
+    sounds.gameStart();
+    setTab('multi');
+  };
+
+  const declineInvite = async () => {
+    if (!invite) return;
+    await supabase.from('game_invites').update({ status: 'declined' }).eq('id', invite.id);
+    setInvite(null);
+    sounds.tap();
+  };
 
   const NAV_ITEMS = [
     { id: 'home', icon: '🏠', label: t('nav.home', lang) },
     { id: 'map', icon: '🗺️', label: t('nav.map', lang) },
-    { id: 'arena', icon: '⚔️', label: t('nav.arena', lang) },
+    { id: 'arena', icon: '⚔️', label: isHe ? 'זירה' : 'Arena' },
     { id: 'multi', icon: '🌐', label: isHe ? 'מולטי' : 'Multi' },
+    { id: 'trophy', icon: '🏆', label: isHe ? 'טורניר' : 'Cup' },
     { id: 'shop', icon: '🛒', label: t('nav.shop', lang) },
-    { id: 'board', icon: '🏆', label: t('nav.board', lang) },
+    { id: 'board', icon: '📊', label: isHe ? 'דירוג' : 'Rank' },
   ];
 
   const onGameFinish = async () => {
-    const oldXP = profile.xp;
     setActiveGame(null);
     await refreshProfile();
-    // Show XP popup
-    const gained = profile.xp - oldXP;
-    if (gained > 0) {
-      setShowXPPopup(gained);
-      setTimeout(() => setShowXPPopup(null), 2000);
-    }
   };
 
   if (activeGame) {
@@ -126,29 +168,66 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
     }
   }
 
+  const unlockedAchievements = ACHIEVEMENTS.filter(a => a.check(profile));
+  const lockedAchievements = ACHIEVEMENTS.filter(a => !a.check(profile));
+
   return (
     <div style={{ background: 'linear-gradient(135deg,#0f0c29,#302b63,#24243e)', minHeight: '100vh' }}>
-      {/* Level Up Celebration */}
+      {/* Level Up */}
       {showLevelUp && (
         <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
           <div className="text-center animate-bounce">
             <div className="text-7xl mb-3">🎉</div>
             <div className="text-3xl font-black text-white mb-1">LEVEL UP!</div>
             <div className="text-5xl font-black" style={{ color: '#fbbf24' }}>{profile.level}</div>
-            <div className="text-lg text-indigo-300">{isHe ? 'כל הכבוד!' : 'Amazing!'}</div>
           </div>
         </div>
       )}
 
-      {/* XP Popup */}
-      {showXPPopup && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
-          <div className="text-2xl font-black animate-bounce" style={{ color: '#fbbf24', textShadow: '0 0 20px rgba(245,158,11,0.5)' }}>
-            +{showXPPopup} XP ⭐
+      {/* Invite Popup */}
+      {invite && (
+        <div className="fixed inset-0 flex items-center justify-center px-4 z-50" style={{ background: 'rgba(0,0,0,0.7)' }}>
+          <div className="w-full max-w-sm rounded-3xl p-6 text-center" style={{ background: '#1e1b4b', border: '2px solid #6366f1' }} dir="rtl">
+            <div className="text-5xl mb-3 animate-bounce">⚔️</div>
+            <h3 className="text-xl font-black text-white mb-2">הזמנה למשחק!</h3>
+            <p className="text-sm text-indigo-300 mb-5">{invite.from_name} מאתגר אותך!</p>
+            <div className="flex gap-2">
+              <button onClick={acceptInvite}
+                className="flex-1 py-3 rounded-xl text-white font-bold transition-all hover:scale-[1.02]"
+                style={{ background: 'linear-gradient(135deg,#22c55e,#16a34a)' }}>✅ קבל!</button>
+              <button onClick={declineInvite}
+                className="flex-1 py-3 rounded-xl font-bold transition-all hover:scale-[1.02]"
+                style={{ background: 'rgba(239,68,68,0.2)', color: '#f87171' }}>❌ דחה</button>
+            </div>
           </div>
         </div>
       )}
 
+      {/* Achievements Modal */}
+      {showAchievements && (
+        <div className="fixed inset-0 flex items-center justify-center px-4 z-50" style={{ background: 'rgba(0,0,0,0.7)' }} onClick={() => setShowAchievements(false)}>
+          <div className="w-full max-w-md rounded-3xl p-6 max-h-[80vh] overflow-y-auto" style={{ background: '#1e1b4b', border: '1px solid rgba(255,255,255,0.1)' }} dir="rtl" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-black text-white mb-4">🎖️ {isHe ? 'הישגים' : 'Achievements'} ({unlockedAchievements.length}/{ACHIEVEMENTS.length})</h3>
+            <div className="space-y-2">
+              {ACHIEVEMENTS.map(a => {
+                const done = a.check(profile);
+                return (
+                  <div key={a.id} className="flex items-center gap-3 rounded-xl p-3" style={{ background: done ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.02)', border: `1px solid ${done ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.05)'}`, opacity: done ? 1 : 0.5 }}>
+                    <span className="text-2xl">{a.emoji}</span>
+                    <div className="flex-1">
+                      <div className="text-sm font-bold text-white">{isHe ? a.titleHe : a.titleEn}</div>
+                    </div>
+                    <span className="text-lg">{done ? '✅' : '🔒'}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <button onClick={() => setShowAchievements(false)} className="w-full mt-4 py-2.5 rounded-xl text-sm font-bold" style={{ background: 'rgba(255,255,255,0.08)', color: '#94a3b8' }}>סגור</button>
+          </div>
+        </div>
+      )}
+
+      {/* Top Bar */}
       <div className="flex justify-between px-4 pt-3">
         <button onClick={() => { sounds.tap(); setLang(isHe ? 'en' : 'he'); }}
           className="text-xs px-3 py-1.5 rounded-lg font-bold" style={{ background: 'rgba(255,255,255,0.08)', color: '#a5b4fc' }}>
@@ -159,22 +238,18 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
 
       {tab === 'home' && (
         <div className="px-4 py-5 pb-24 max-w-lg mx-auto" dir={isHe ? 'rtl' : 'ltr'}>
-          {/* Avatar + Profile */}
+          {/* Profile */}
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-3">
               <div className="relative">
-                <div className="w-16 h-16 rounded-full flex items-center justify-center text-2xl"
-                  style={{ background: `${avatarColor}30`, border: `3px solid ${avatarColor}`, boxShadow: `0 0 20px ${avatarColor}30` }}>
-                  {equippedPet ? SHOP_EMOJI[equippedPet] : track.emoji}
+                <div className="w-16 h-16 rounded-full flex items-center justify-center text-2xl" style={{ background: `${avatarColor}30`, border: `3px solid ${avatarColor}`, boxShadow: `0 0 20px ${avatarColor}30` }}>
+                  {equipped.pet ? SHOP_EMOJI[equipped.pet] : track.emoji}
                 </div>
-                {equippedHat && <span className="absolute -top-3 -right-1 text-xl">{SHOP_EMOJI[equippedHat]}</span>}
-                {equippedSkin && <span className="absolute -bottom-1 -left-1 text-sm">{SHOP_EMOJI[equippedSkin]}</span>}
+                {equipped.hat && <span className="absolute -top-3 -right-1 text-xl">{SHOP_EMOJI[equipped.hat]}</span>}
               </div>
               <div>
                 <h2 className="text-lg font-black text-white">{profile.nickname}</h2>
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: `${track.color}25`, color: track.color }}>
-                  {track.emoji} {isHe ? track.nameHe : track.name}
-                </span>
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: `${track.color}25`, color: track.color }}>{track.emoji} {isHe ? track.nameHe : track.name}</span>
               </div>
             </div>
             <div className="text-center">
@@ -183,19 +258,18 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
             </div>
           </div>
 
-          {/* Daily Streak Banner */}
+          {/* Streak */}
           {dailyStreak > 0 && (
             <div className="rounded-2xl p-3 mb-4 flex items-center gap-3" style={{ background: 'linear-gradient(135deg,rgba(245,158,11,0.15),rgba(239,68,68,0.1))', border: '1px solid rgba(245,158,11,0.3)' }}>
               <div className="text-3xl">🔥</div>
               <div className="flex-1">
                 <div className="text-sm font-black text-white">{dailyStreak} {isHe ? 'ימים ברצף!' : 'Day Streak!'}</div>
-                <div className="text-xs text-slate-400">{isHe ? 'תמשיך לשחק כל יום!' : 'Keep playing every day!'}</div>
+                <div className="text-xs text-slate-400">{isHe ? 'תמשיך כל יום!' : 'Keep it up!'}</div>
               </div>
-              <div className="text-xs font-bold px-2 py-1 rounded-lg" style={{ background: 'rgba(245,158,11,0.2)', color: '#fbbf24' }}>x{Math.min(dailyStreak, 5)} {isHe ? 'בונוס' : 'bonus'}</div>
             </div>
           )}
 
-          {/* XP Bar */}
+          {/* XP */}
           <div className="rounded-2xl p-4 mb-4" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
             <div className="flex justify-between mb-1.5">
               <span className="text-xs font-bold text-indigo-300">{t('dash.level', lang)} {profile.level}</span>
@@ -206,71 +280,85 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
             </div>
           </div>
 
-          {/* Stats Cards */}
+          {/* Stats */}
           <div className="grid grid-cols-3 gap-2.5 mb-4">
-            {[{ label: t('dash.stars', lang), value: profile.xp, icon: '⭐' }, { label: t('dash.lingos', lang), value: profile.lingos, icon: '💰' }, { label: t('dash.tickets', lang), value: profile.tickets, icon: '🎫' }].map(s => (
-              <div key={s.label} className="rounded-xl p-3 text-center" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                <div className="text-xl">{s.icon}</div>
+            {[{ label: '⭐', value: profile.xp }, { label: '💰', value: profile.lingos }, { label: '🎫', value: profile.tickets }].map((s, i) => (
+              <div key={i} className="rounded-xl p-3 text-center" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <div className="text-xl">{s.label}</div>
                 <div className="text-lg font-black text-white">{s.value}</div>
-                <div className="text-[10px] text-slate-400">{s.label}</div>
               </div>
             ))}
           </div>
 
-          {/* Play Button */}
+          {/* Play */}
           <button onClick={() => { sounds.click(); setTab('map'); }}
-            className="w-full py-5 rounded-2xl text-white font-black text-xl tracking-wide mb-4 transition-all hover:scale-[1.02] active:scale-[0.97]"
+            className="w-full py-5 rounded-2xl text-white font-black text-xl mb-4 transition-all hover:scale-[1.02] active:scale-[0.97]"
             style={{ background: 'linear-gradient(135deg,#22c55e,#16a34a)', boxShadow: '0 4px 25px rgba(34,197,94,0.4)' }}>
             {t('dash.play', lang)}
           </button>
 
+          {/* Quick Actions */}
+          <div className="grid grid-cols-2 gap-2.5 mb-4">
+            <button onClick={() => { sounds.tap(); setTab('multi'); }}
+              className="rounded-xl p-3 text-center transition-all hover:scale-[1.02]"
+              style={{ background: 'linear-gradient(135deg,rgba(139,92,246,0.15),rgba(99,102,241,0.15))', border: '1px solid rgba(139,92,246,0.3)' }}>
+              <div className="text-2xl mb-1">🌐</div>
+              <div className="text-xs font-bold text-white">{isHe ? 'מולטיפלייר' : 'Multiplayer'}</div>
+            </button>
+            <button onClick={() => { sounds.tap(); setTab('trophy'); }}
+              className="rounded-xl p-3 text-center transition-all hover:scale-[1.02]"
+              style={{ background: 'linear-gradient(135deg,rgba(245,158,11,0.15),rgba(239,68,68,0.1))', border: '1px solid rgba(245,158,11,0.3)' }}>
+              <div className="text-2xl mb-1">🏆</div>
+              <div className="text-xs font-bold text-white">{isHe ? 'טורנירים' : 'Tournaments'}</div>
+            </button>
+          </div>
+
           {/* Daily Quests */}
-          <div className="rounded-2xl p-4 mb-4" style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.08),rgba(168,85,247,0.08))', border: '1px solid rgba(99,102,241,0.2)' }}>
+          <div className="rounded-2xl p-4 mb-4" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)' }}>
             <div className="text-xs font-bold mb-3 text-indigo-300">📋 {isHe ? 'משימות יומיות' : 'Daily Quests'}</div>
             <div className="space-y-2">
               {DAILY_QUESTS.map(quest => {
                 const progress = Math.min((profile[quest.field] || 0), quest.target);
                 const done = progress >= quest.target;
                 return (
-                  <div key={quest.id} className="flex items-center gap-3 rounded-xl p-2.5" style={{ background: done ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.03)', border: `1px solid ${done ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.05)'}` }}>
+                  <div key={quest.id} className="flex items-center gap-3 rounded-xl p-2.5" style={{ background: done ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.03)' }}>
                     <span className="text-xl">{quest.emoji}</span>
                     <div className="flex-1">
                       <div className="text-xs font-bold text-white">{isHe ? quest.titleHe : quest.titleEn}</div>
                       <div className="h-1.5 rounded-full mt-1 overflow-hidden" style={{ background: 'rgba(255,255,255,0.1)' }}>
-                        <div className="h-full rounded-full transition-all" style={{ width: `${(progress / quest.target) * 100}%`, background: done ? '#22c55e' : '#6366f1' }} />
+                        <div className="h-full rounded-full" style={{ width: `${(progress / quest.target) * 100}%`, background: done ? '#22c55e' : '#6366f1' }} />
                       </div>
                     </div>
-                    <div className="text-xs font-bold" style={{ color: done ? '#34d399' : '#94a3b8' }}>
-                      {done ? '✅' : `${progress}/${quest.target}`}
-                    </div>
-                    <div className="text-xs font-bold" style={{ color: '#fbbf24' }}>💰{quest.reward}</div>
+                    <span className="text-xs font-bold" style={{ color: done ? '#34d399' : '#94a3b8' }}>{done ? '✅' : `${progress}/${quest.target}`}</span>
+                    <span className="text-xs" style={{ color: '#fbbf24' }}>💰{quest.reward}</span>
                   </div>
                 );
               })}
             </div>
           </div>
 
+          {/* Achievements */}
+          <button onClick={() => { sounds.tap(); setShowAchievements(true); }}
+            className="w-full rounded-2xl p-4 mb-4 flex items-center gap-3 transition-all hover:scale-[1.01]"
+            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <span className="text-2xl">🎖️</span>
+            <div className="flex-1 text-right">
+              <div className="text-sm font-bold text-white">{isHe ? 'הישגים' : 'Achievements'}</div>
+              <div className="text-xs text-slate-400">{unlockedAchievements.length}/{ACHIEVEMENTS.length} {isHe ? 'הושלמו' : 'completed'}</div>
+            </div>
+            <div className="flex -space-x-1">
+              {unlockedAchievements.slice(0, 5).map(a => <span key={a.id} className="text-lg">{a.emoji}</span>)}
+            </div>
+          </button>
+
           {/* Stats */}
           <div className="rounded-2xl p-4 mb-4" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <div className="text-xs font-bold mb-2 text-indigo-300">📊 {t('dash.stats', lang)}</div>
             <div className="grid grid-cols-3 gap-2 text-center">
-              <div><div className="text-lg font-black text-white">{profile.games_played}</div><div className="text-[10px] text-slate-400">{t('dash.games', lang)}</div></div>
-              <div><div className="text-lg font-black text-white">{profile.arena_wins}</div><div className="text-[10px] text-slate-400">{t('dash.wins', lang)}</div></div>
-              <div><div className="text-lg font-black text-white">{(profile.inventory || []).length}</div><div className="text-[10px] text-slate-400">{t('dash.items', lang)}</div></div>
+              <div><div className="text-lg font-black text-white">{profile.games_played}</div><div className="text-[10px] text-slate-400">{isHe ? 'משחקים' : 'Games'}</div></div>
+              <div><div className="text-lg font-black text-white">{profile.arena_wins}</div><div className="text-[10px] text-slate-400">{isHe ? 'ניצחונות' : 'Wins'}</div></div>
+              <div><div className="text-lg font-black text-white">{(profile.inventory || []).length}</div><div className="text-[10px] text-slate-400">{isHe ? 'פריטים' : 'Items'}</div></div>
             </div>
           </div>
-
-          {/* Equipped Items */}
-          {(equippedSkin || equippedHat || equippedPet) && (
-            <div className="rounded-2xl p-4 mb-4" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <div className="text-xs font-bold mb-2 text-indigo-300">🎒 {isHe ? 'פריטים מצוידים' : 'Equipped Items'}</div>
-              <div className="flex gap-3 justify-center">
-                {equippedSkin && <div className="text-center"><div className="text-2xl">{SHOP_EMOJI[equippedSkin]}</div><div className="text-[10px] text-slate-400">{isHe ? 'צבע' : 'Skin'}</div></div>}
-                {equippedHat && <div className="text-center"><div className="text-2xl">{SHOP_EMOJI[equippedHat]}</div><div className="text-[10px] text-slate-400">{isHe ? 'כובע' : 'Hat'}</div></div>}
-                {equippedPet && <div className="text-center"><div className="text-2xl">{SHOP_EMOJI[equippedPet]}</div><div className="text-[10px] text-slate-400">{isHe ? 'חיה' : 'Pet'}</div></div>}
-              </div>
-            </div>
-          )}
 
           {/* Invite */}
           <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(135deg,rgba(34,197,94,0.1),rgba(99,102,241,0.1))', border: '1px solid rgba(34,197,94,0.2)' }}>
@@ -283,7 +371,7 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
               <button onClick={() => { navigator.clipboard.writeText(shareText).catch(() => {}); setCopied(true); sounds.coin(); setTimeout(() => setCopied(false), 2000); }}
                 className="px-4 py-2.5 rounded-xl font-bold text-sm"
                 style={{ background: 'rgba(255,255,255,0.05)', color: copied ? '#34d399' : '#e2e8f0', border: '1px solid rgba(255,255,255,0.1)' }}>
-                {copied ? '✅' : '📋'} Copy
+                {copied ? '✅' : '📋'}
               </button>
             </div>
           </div>
@@ -293,18 +381,19 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
       {tab === 'map' && <WorldMap profile={profile} onSelectGame={(game) => { sounds.gameStart(); setActiveGame(game); }} />}
       {tab === 'arena' && <ArenaGame profile={profile} userId={userId} onFinish={async () => { setTab('home'); await refreshProfile(); }} />}
       {tab === 'multi' && <MultiplayerGame profile={profile} userId={userId} onFinish={async () => { setTab('home'); await refreshProfile(); }} />}
+      {tab === 'trophy' && <Tournament profile={profile} userId={userId} onPlay={() => { setTab('multi'); }} />}
       {tab === 'shop' && <Shop profile={profile} userId={userId} refreshProfile={refreshProfile} />}
       {tab === 'board' && <Leaderboard profile={profile} userId={userId} onChallenge={(player) => { sounds.gameStart(); setTab('multi'); }} />}
 
       {/* Bottom Nav */}
-      <div className="fixed bottom-0 left-0 right-0 flex justify-around items-center py-2 px-1"
+      <div className="fixed bottom-0 left-0 right-0 flex justify-around items-center py-2"
         style={{ background: 'rgba(15,12,41,0.95)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.08)', zIndex: 50 }}>
         {NAV_ITEMS.map(item => (
           <button key={item.id} onClick={() => { sounds.tap(); setTab(item.id); }}
-            className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all"
+            className="flex flex-col items-center gap-0.5 px-1.5 py-1 rounded-xl transition-all"
             style={{ background: tab === item.id ? 'rgba(99,102,241,0.2)' : 'transparent', transform: tab === item.id ? 'scale(1.1)' : 'scale(1)' }}>
             <span className="text-lg">{item.icon}</span>
-            <span className="text-[9px] font-bold" style={{ color: tab === item.id ? '#a5b4fc' : '#64748b' }}>{item.label}</span>
+            <span className="text-[8px] font-bold" style={{ color: tab === item.id ? '#a5b4fc' : '#64748b' }}>{item.label}</span>
           </button>
         ))}
       </div>
