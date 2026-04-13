@@ -73,7 +73,8 @@ export default function SpellingGame({ profile, userId, onFinish }: { profile: a
         <h3 className="text-xl font-black text-white mb-2">Spelling Bee</h3>
         <div className="rounded-2xl p-5 mb-4 text-center w-full" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
           <p className="text-sm mb-1 text-indigo-300">Spell this word:</p>
-          <p className="text-lg mb-3" style={{ color: '#fbbf24' }}>{q.hint}</p>
+          <p className="text-lg mb-2" style={{ color: '#fbbf24' }}>{q.hint}</p>
+<p className="text-sm" style={{ color: '#94a3b8' }}>{q.hintHe || ''}</p>
           <button onClick={() => sounds.speak(q.word)} className="px-6 py-2 rounded-full text-sm font-bold transition-all hover:scale-105" style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: 'white' }}>🔊 Listen</button>
         </div>
         <div className="w-full flex gap-2 mb-4">

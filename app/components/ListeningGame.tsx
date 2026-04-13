@@ -76,8 +76,7 @@ export default function ListeningGame({ profile, userId, onFinish }: { profile: 
             return <button key={i} onClick={() => pick(o)} disabled={selected !== null} className="py-4 px-3 rounded-2xl font-bold text-sm transition-all hover:scale-[1.03] disabled:hover:scale-100" style={{ background: bg, border: brd, color: col }}>{o}{show && isAns && ' ✅'}{show && isSel && !isAns && ' ❌'}</button>;
           })}
         </div>
-        {correct !== null && <p className="mt-4 text-lg font-black" style={{ color: correct ? '#34d399' : '#f87171' }}>{correct ? '🎧 Perfect Ear!' : `It was: ${q.word}`}</p>}
-      </div>
+{correct ? '🎧 Perfect Ear!' : `It was: ${q.word}`}{q.wordHe ? ` = ${q.wordHe}` : ''}      </div>
     </div>
   );
 }
