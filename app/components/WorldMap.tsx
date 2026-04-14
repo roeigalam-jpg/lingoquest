@@ -6,6 +6,7 @@ const ISLANDS = [
   { id: 'match', name: 'Match Valley', emoji: '🎯', unlockLevel: 3, color: '#ec4899', game: 'drag-match', gameLabel: 'Drag & Match 🖐️', desc: 'Connect words to pictures!', descHe: 'חבר מילים לתמונות!' },
   { id: 'food', name: 'Food Valley', emoji: '🍕', unlockLevel: 4, color: '#ef4444', game: 'sentence', gameLabel: 'Sentence Builder 🔧', desc: 'Build sentences!', descHe: 'בנה משפטים!' },
   { id: 'mystery', name: 'Mystery Island', emoji: '🔮', unlockLevel: 6, color: '#8b5cf6', game: 'listening', gameLabel: 'Listening 👂', desc: 'Train your ears!', descHe: 'אמן את האוזניים!' },
+  { id: 'story', name: 'Story Land', emoji: '📖', unlockLevel: 2, color: '#ec4899', game: 'story', gameLabel: 'Adventures 📖', desc: 'Learn through stories!', descHe: 'למד דרך סיפורים!' },
 ];
 
 export default function WorldMap({ profile, onSelectGame }: { profile: any; onSelectGame: (game: string) => void }) {

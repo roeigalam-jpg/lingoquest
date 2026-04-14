@@ -14,6 +14,7 @@ import MultiplayerGame from './MultiplayerGame';
 import Shop from './Shop';
 import Leaderboard from './Leaderboard';
 import Tournament from './Tournament';
+import StoryGame from './StoryGame';
 
 const TRACKS: any = {
   explorers: { name: 'Explorers', nameHe: 'חוקרים', emoji: '🧭', color: '#22c55e' },
@@ -164,6 +165,7 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
       case 'listening': return <ListeningGame {...gameProps} />;
       case 'arena': return <ArenaGame {...gameProps} />;
       case 'drag-match': return <DragMatchGame {...gameProps} />;
+      case 'story': return <StoryGame {...gameProps} />;
       default: return <WordMatchGame {...gameProps} />;
     }
   }
@@ -312,6 +314,18 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
               <div className="text-xs font-bold text-white">{isHe ? 'טורנירים' : 'Tournaments'}</div>
             </button>
           </div>
+
+          {/* Story Adventures Quick Action */}
+          <button onClick={() => { sounds.mystery(); setActiveGame('story'); }}
+            className="w-full rounded-2xl p-4 mb-4 flex items-center gap-3 transition-all hover:scale-[1.01]"
+            style={{ background: 'linear-gradient(135deg,rgba(168,85,247,0.15),rgba(236,72,153,0.1))', border: '1px solid rgba(168,85,247,0.3)' }}>
+            <div className="text-3xl">📖</div>
+            <div className="flex-1 text-right">
+              <div className="text-sm font-bold text-white">{isHe ? 'הרפתקאות וסיפורים' : 'Story Adventures'}</div>
+              <div className="text-xs text-slate-400">{isHe ? 'למד אנגלית דרך סיפורים מרתקים!' : 'Learn through exciting stories!'}</div>
+            </div>
+            <span className="text-xl">▶</span>
+          </button>
 
           {/* Daily Quests */}
           <div className="rounded-2xl p-4 mb-4" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)' }}>
