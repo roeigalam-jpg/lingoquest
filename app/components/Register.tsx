@@ -182,7 +182,7 @@ export default function Register({ user, onRegistered, onNeedAuth, setUser, lang
                   onChange={e => update('nickname', e.target.value)}
                   className="w-full px-4 py-3 rounded-xl text-sm" style={inputStyle('nickname')} maxLength={20} />
                 {/* Availability indicator */}
-                {form.nickname.trim().length >= 2 && mode !== 'login' && (
+                {form.nickname.trim().length >= 2 && (mode === 'quick' || mode === 'email_register') && (
                   <div className="mt-1 text-xs">
                     {checkingNick ? <span className="text-slate-400">⏳ {isHe ? 'בודק...' : 'Checking...'}</span> :
                       nickAvailable === true ? <span className="text-green-400">✅ {isHe ? 'השם פנוי!' : 'Available!'}</span> :
