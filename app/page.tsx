@@ -16,18 +16,11 @@ export default function Home() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser(session.user);
-        loadProfile(session.user.id);
-      } else {
-        setLoading(false);
-      }
+      if (session?.user) { setUser(session.user); loadProfile(session.user.id); }
+      else { setLoading(false); }
     });
     supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setUser(session.user);
-        loadProfile(session.user.id);
-      }
+      if (session?.user) { setUser(session.user); loadProfile(session.user.id); }
     });
   }, []);
 
@@ -40,9 +33,7 @@ export default function Home() {
     setLoading(false);
   };
 
-  const refreshProfile = async () => {
-    if (user) await loadProfile(user.id);
-  };
+  const refreshProfile = async () => { if (user) await loadProfile(user.id); };
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center" style={{background:'linear-gradient(135deg,#0f0c29,#302b63,#24243e)'}}>
@@ -53,9 +44,27 @@ export default function Home() {
   return (
     <>
       {screen === 'landing' && <Landing onStart={() => setScreen('register')} lang={lang} setLang={setLang} />}
-      {screen === 'register' && <Register user={user} onRegistered={(p: any) => { setProfile(p); setScreen('dashboard'); }} onNeedAuth={() => setScreen('verify')} setUser={setUser} lang={lang} setLang={setLang} />}
+      {screen === 'register' && (
+        <Register
+          user={user}
+          onRegistered={(p: any) => { setProfile(p); setScreen('dashboard'); }}
+          onNeedAuth={() => setScreen('verify')}
+          setUser={setUser}
+          lang={lang}
+          setLang={setLang}
+        />
+      )}
       {screen === 'verify' && <Verify email={user?.email} onVerified={() => loadProfile(user.id)} />}
-      {screen === 'dashboard' && profile && <Dashboard profile={profile} userId={user.id} refreshProfile={refreshProfile} lang={lang} setLang={setLang} onLogout={async () => { await supabase.auth.signOut(); setUser(null); setProfile(null); setScreen('landing'); }} />}
+      {screen === 'dashboard' && profile && (
+        <Dashboard
+          profile={profile}
+          userId={user.id}
+          refreshProfile={refreshProfile}
+          lang={lang}
+          setLang={setLang}
+          onLogout={async () => { await supabase.auth.signOut(); setUser(null); setProfile(null); setScreen('landing'); }}
+        />
+      )}
     </>
   );
 }
