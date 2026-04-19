@@ -1,0 +1,17 @@
+npx next-pwa --help 2>/dev/null || echo "skip"
+cat > public/manifest.json << 'ENDOFFILE'
+{
+  "name": "LingoQuest",
+  "short_name": "LingoQuest",
+  "description": "Learn English through Epic Adventures!",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f0c29",
+  "theme_color": "#6366f1",
+  "orientation": "portrait"
+}
+ENDOFFILE
+cat > app/layout.tsx << 'ENDOFFILE'
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import "./globals.css";
