@@ -15,6 +15,8 @@ import Shop from './Shop';
 import Leaderboard from './Leaderboard';
 import Tournament from './Tournament';
 import StoryGame from './StoryGame';
+import ProfileCard from './ProfileCard';
+import Tutorial from './Tutorial';
 
 const TRACKS: any = {
   explorers: { name: 'Explorers', nameHe: 'חוקרים', emoji: '🧭', color: '#22c55e' },
@@ -59,6 +61,9 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
   const [showXPPopup, setShowXPPopup] = useState<number | null>(null);
   const [invite, setInvite] = useState<any>(null);
   const [showAchievements, setShowAchievements] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [announcement, setAnnouncement] = useState<any>(null);
   const inviteChannelRef = useRef<any>(null);
   const track = TRACKS[profile.track] || TRACKS.explorers;
   const xpToNext = profile.level * 100;
@@ -99,6 +104,19 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
         setDailyStreak(newStreak);
       }
     } catch (_) {}
+  }, []);
+
+  // Check announcements
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await supabase.from('announcements').select('*').order('created_at', { ascending: false }).limit(1);
+        if (data && data.length > 0) {
+          const lastSeen = localStorage.getItem('lq_last_announcement');
+          if (lastSeen !== data[0].id) { setAnnouncement(data[0]); }
+        }
+      } catch (_) {}
+    })();
   }, []);
 
   // Listen for game invites
@@ -229,13 +247,42 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
         </div>
       )}
 
+      {/* Announcement Popup */}
+      {announcement && (
+        <div className="fixed inset-0 flex items-center justify-center px-4 z-50" style={{ background: 'rgba(0,0,0,0.7)' }}>
+          <div className="w-full max-w-sm rounded-3xl p-6 text-center" style={{ background: '#1e1b4b', border: '2px solid #6366f1' }} dir="rtl">
+            <div className="text-5xl mb-3">{announcement.emoji || '📢'}</div>
+            <h3 className="text-xl font-black text-white mb-2">{announcement.title}</h3>
+            <p className="text-sm text-slate-300 mb-5 whitespace-pre-line">{announcement.message}</p>
+            <button onClick={() => { localStorage.setItem('lq_last_announcement', announcement.id); setAnnouncement(null); sounds.tap(); }}
+              className="w-full py-3 rounded-xl text-white font-bold" style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}>👍 הבנתי!</button>
+          </div>
+        </div>
+      )}
+
+      {/* Profile Modal */}
+      {showProfile && <ProfileCard profile={profile} userId={userId} refreshProfile={refreshProfile} onClose={() => setShowProfile(false)} />}
+
+      {/* Tutorial Modal */}
+      {showTutorial && <Tutorial onClose={() => setShowTutorial(false)} />}
+
       {/* Top Bar */}
       <div className="flex justify-between px-4 pt-3">
-        <button onClick={() => { sounds.tap(); setLang(isHe ? 'en' : 'he'); }}
-          className="text-xs px-3 py-1.5 rounded-lg font-bold" style={{ background: 'rgba(255,255,255,0.08)', color: '#a5b4fc' }}>
-          {t('lang.switch', lang)}
-        </button>
-        <button onClick={onLogout} className="text-xs px-3 py-1.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.08)', color: '#64748b' }}>{t('dash.logout', lang)}</button>
+        <div className="flex gap-2">
+          <button onClick={() => { sounds.tap(); setLang(isHe ? 'en' : 'he'); }}
+            className="text-xs px-3 py-1.5 rounded-lg font-bold" style={{ background: 'rgba(255,255,255,0.08)', color: '#a5b4fc' }}>
+            {t('lang.switch', lang)}
+          </button>
+          <button onClick={() => { sounds.mystery(); setShowTutorial(true); }}
+            className="text-xs px-3 py-1.5 rounded-lg font-bold" style={{ background: 'rgba(245,158,11,0.15)', color: '#fbbf24' }}>
+            ❓ {isHe ? 'איך משחקים?' : 'How to play?'}
+          </button>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={() => { sounds.tap(); setShowProfile(true); }}
+            className="text-xs px-3 py-1.5 rounded-lg font-bold" style={{ background: 'rgba(99,102,241,0.2)', color: '#a5b4fc' }}>🪪</button>
+          <button onClick={onLogout} className="text-xs px-3 py-1.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.08)', color: '#64748b' }}>{t('dash.logout', lang)}</button>
+        </div>
       </div>
 
       {tab === 'home' && (
@@ -243,8 +290,8 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
           {/* Profile */}
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="w-16 h-16 rounded-full flex items-center justify-center text-2xl" style={{ background: `${avatarColor}30`, border: `3px solid ${avatarColor}`, boxShadow: `0 0 20px ${avatarColor}30` }}>
+              <div className="relative cursor-pointer" onClick={() => { sounds.tap(); setShowProfile(true); }}>
+                <div className="w-16 h-16 rounded-full flex items-center justify-center text-2xl transition-all hover:scale-105" style={{ background: `${avatarColor}30`, border: `3px solid ${avatarColor}`, boxShadow: `0 0 20px ${avatarColor}30` }}>
                   {equipped.pet ? SHOP_EMOJI[equipped.pet] : track.emoji}
                 </div>
                 {equipped.hat && <span className="absolute -top-3 -right-1 text-xl">{SHOP_EMOJI[equipped.hat]}</span>}

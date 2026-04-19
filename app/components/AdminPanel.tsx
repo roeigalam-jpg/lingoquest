@@ -16,7 +16,10 @@ export default function AdminPanel() {
   const [editForm, setEditForm] = useState<any>({});
   const [search, setSearch] = useState('');
   const [msg, setMsg] = useState('');
-  const [activeTab, setActiveTab] = useState<'users' | 'tournaments'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'tournaments' | 'announce'>('users');
+  const [announceTitle, setAnnounceTitle] = useState('');
+  const [announceMsg, setAnnounceMsg] = useState('');
+  const [announceEmoji, setAnnounceEmoji] = useState('📢');
 
   const login = () => {
     if (password === ADMIN_PASSWORD) { setAuthenticated(true); setError(''); loadAll(); }
@@ -174,8 +177,10 @@ export default function AdminPanel() {
 
         {/* Tabs */}
         <div className="flex gap-2 mb-4">
-          <button onClick={() => setActiveTab('users')} className="flex-1 py-2 rounded-xl text-sm font-bold" style={{ background: activeTab === 'users' ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.05)', color: activeTab === 'users' ? '#a5b4fc' : '#94a3b8' }}>👥 משתמשים</button>
-          <button onClick={() => setActiveTab('tournaments')} className="flex-1 py-2 rounded-xl text-sm font-bold" style={{ background: activeTab === 'tournaments' ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.05)', color: activeTab === 'tournaments' ? '#a5b4fc' : '#94a3b8' }}>🏆 טורנירים ({tournaments.length})</button>
+          <button onClick={() => setActiveTab('users')} className="flex-1 py-2 rounded-xl text-xs font-bold" style={{ background: activeTab === 'users' ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.05)', color: activeTab === 'users' ? '#a5b4fc' : '#94a3b8' }}>👥 משתמשים</button>
+          <button onClick={() => setActiveTab('tournaments')} className="flex-1 py-2 rounded-xl text-xs font-bold" style={{ background: activeTab === 'tournaments' ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.05)', color: activeTab === 'tournaments' ? '#a5b4fc' : '#94a3b8' }}>🏆 טורנירים</button>
+          <button onClick={() => setActiveTab('announce')} className="flex-1 py-2 rounded-xl text-xs font-bold" style={{ background: activeTab === 'announce' ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.05)', color: activeTab === 'announce' ? '#a5b4fc' : '#94a3b8' }}>📢 הודעות</button>
+        </div>
         </div>
 
         {/* Users Tab */}
@@ -239,6 +244,36 @@ export default function AdminPanel() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Announcements Tab */}
+        {activeTab === 'announce' && (
+          <div className="space-y-4">
+            <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <h3 className="text-sm font-black text-white mb-3">📢 שלח הודעה לכל המשתמשים</h3>
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  <select value={announceEmoji} onChange={e => setAnnounceEmoji(e.target.value)}
+                    className="px-3 py-2 rounded-xl text-lg" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#e2e8f0', outline: 'none', width: 60 }}>
+                    {['📢', '🎉', '🔥', '⚡', '🏆', '🎮', '🛒', '⚠️', '💡', '🎁'].map(e => <option key={e} value={e}>{e}</option>)}
+                  </select>
+                  <input type="text" placeholder="כותרת ההודעה..." value={announceTitle} onChange={e => setAnnounceTitle(e.target.value)}
+                    className="flex-1 px-4 py-2 rounded-xl text-sm" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#e2e8f0', outline: 'none' }} />
+                </div>
+                <textarea placeholder="תוכן ההודעה..." value={announceMsg} onChange={e => setAnnounceMsg(e.target.value)} rows={3}
+                  className="w-full px-4 py-2 rounded-xl text-sm" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#e2e8f0', outline: 'none', resize: 'none' }} />
+                <button onClick={async () => {
+                  if (!announceTitle.trim() || !announceMsg.trim()) { showMsg('❌ מלא כותרת ותוכן'); return; }
+                  await supabase.from('announcements').insert({ title: announceTitle, message: announceMsg, emoji: announceEmoji });
+                  showMsg('✅ הודעה נשלחה לכל המשתמשים!');
+                  setAnnounceTitle(''); setAnnounceMsg(''); setAnnounceEmoji('📢');
+                }} className="w-full py-3 rounded-xl text-white font-bold text-sm" style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}>
+                  📢 שלח הודעה
+                </button>
+              </div>
+            </div>
+            <p className="text-xs text-slate-500 text-center">ההודעה תופיע כפופאפ לכל משתמש בכניסה הבאה</p>
           </div>
         )}
 
