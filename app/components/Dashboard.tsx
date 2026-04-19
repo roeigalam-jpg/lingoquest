@@ -379,9 +379,18 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
             <h3 className="text-sm font-black text-white mb-1">{t('dash.invite_title', lang)}</h3>
             <p className="text-xs text-slate-400 mb-3">{profile.referral_count} {t('dash.invited', lang)}</p>
             <div className="flex gap-2">
-              <a href={`https://wa.me/?text=${whatsappMsg}`} target="_blank" rel="noopener noreferrer"
+              <button onClick={async () => {
+                try {
+                  if (navigator.share) {
+                    await navigator.share({ title: 'LingoQuest', text: shareText, url: referralLink });
+                  } else {
+                    window.open(`https://wa.me/?text=${whatsappMsg}`, '_blank');
+                  }
+                } catch (_) {}
+                sounds.coin();
+              }}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-bold text-white text-sm"
-                style={{ background: 'linear-gradient(135deg,#25D366,#128C7E)' }}>📱 WhatsApp</a>
+                style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}>📤 {isHe ? 'הזמן חברים' : 'Invite Friends'}</button>
               <button onClick={() => { navigator.clipboard.writeText(shareText).catch(() => {}); setCopied(true); sounds.coin(); setTimeout(() => setCopied(false), 2000); }}
                 className="px-4 py-2.5 rounded-xl font-bold text-sm"
                 style={{ background: 'rgba(255,255,255,0.05)', color: copied ? '#34d399' : '#e2e8f0', border: '1px solid rgba(255,255,255,0.1)' }}>

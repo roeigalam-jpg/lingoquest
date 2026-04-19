@@ -117,20 +117,24 @@ export default function Leaderboard({ profile, userId, onChallenge }: { profile:
                       </button>
                     )}
 
-                    {/* WhatsApp invite */}
-                    <a href={`https://wa.me/?text=${getWhatsAppInvite(entry)}`} target="_blank" rel="noopener noreferrer"
+                    {/* Native Share */}
+                    <button onClick={async () => {
+                      const text = getCopyInvite(entry);
+                      try {
+                        if (navigator.share) { await navigator.share({ title: 'LingoQuest - אתגר!', text, url: 'https://lingoquest-75vj.onrender.com' }); }
+                        else { navigator.clipboard.writeText(text).catch(() => {}); }
+                      } catch (_) {}
+                      sounds.coin(); setInviteSent(entry.id); setShowInviteMenu(null); setTimeout(() => setInviteSent(null), 3000);
+                    }}
                       className="w-full py-2 rounded-lg text-xs font-bold text-white flex items-center justify-center gap-1 transition-all hover:scale-[1.02]"
-                      style={{ background: 'linear-gradient(135deg,#25D366,#128C7E)' }}>
-                      📱 שלח הזמנה בוואטסאפ
-                    </a>
+                      style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}>
+                      📤 הזמן שחקן
+                    </button>
 
                     {/* Copy invite */}
                     <button onClick={() => {
                       navigator.clipboard.writeText(getCopyInvite(entry)).catch(() => {});
-                      sounds.coin();
-                      setInviteSent(entry.id);
-                      setShowInviteMenu(null);
-                      setTimeout(() => setInviteSent(null), 3000);
+                      sounds.coin(); setInviteSent(entry.id); setShowInviteMenu(null); setTimeout(() => setInviteSent(null), 3000);
                     }}
                       className="w-full py-2 rounded-lg text-xs font-bold transition-all hover:scale-[1.02]"
                       style={{ background: 'rgba(255,255,255,0.08)', color: '#e2e8f0', border: '1px solid rgba(255,255,255,0.15)' }}>

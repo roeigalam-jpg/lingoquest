@@ -82,10 +82,16 @@ export default function Tournament({ profile, userId, onPlay }: { profile: any; 
     loadTournaments();
   };
 
-  const shareTournament = (t: any) => {
+  const shareTournament = async (t: any) => {
     const players = t.players || [];
     const text = `🏆 הצטרפו לטורניר ב-LingoQuest!\n\n⚔️ ${t.name}\n👥 ${players.length}/${t.max_players} שחקנים\n💰 פרס: ${t.prize_lingos} Lingos + ⭐ ${t.prize_xp} XP\n\n🌟 https://lingoquest-75vj.onrender.com`;
-    navigator.clipboard.writeText(text).catch(() => {});
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: t.name, text, url: 'https://lingoquest-75vj.onrender.com' });
+      } else {
+        navigator.clipboard.writeText(text).catch(() => {});
+      }
+    } catch (_) {}
     sounds.coin();
   };
 
@@ -163,7 +169,11 @@ export default function Tournament({ profile, userId, onPlay }: { profile: any; 
                   {isIn ? (
                     <>
                       <button onClick={onPlay} className="flex-1 py-2 rounded-xl text-white font-bold text-xs" style={{ background: 'linear-gradient(135deg,#22c55e,#16a34a)' }}>🎮 שחק</button>
-                      <button onClick={() => shareTournament(t)} className="px-3 py-2 rounded-xl text-xs font-bold" style={{ background: 'rgba(255,255,255,0.08)', color: '#94a3b8' }}>📋</button>
+                      <button onClick={() => shareTournament(t)} className="px-3 py-2 rounded-xl text-xs font-bold" style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: 'white' }}>📤 הזמן</button>
+                      <button onClick={() => {
+                        const text = `🏆 הצטרפו לטורניר ב-LingoQuest!\n\n⚔️ ${t.name}\n👥 ${players.length}/${t.max_players}\n💰 ${t.prize_lingos} Lingos\n\n🌟 https://lingoquest-75vj.onrender.com`;
+                        navigator.clipboard.writeText(text).catch(() => {}); sounds.coin();
+                      }} className="px-3 py-2 rounded-xl text-xs font-bold" style={{ background: 'rgba(255,255,255,0.08)', color: '#94a3b8' }}>📋</button>
                       {canDelete && <button onClick={() => deleteTournament(t)} className="px-3 py-2 rounded-xl text-xs font-bold" style={{ background: 'rgba(239,68,68,0.2)', color: '#f87171' }}>🗑️</button>}
                     </>
                   ) : t.status === 'open' ? (
