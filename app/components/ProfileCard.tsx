@@ -63,7 +63,7 @@ export default function ProfileCard({ profile, userId, refreshProfile, onClose }
     const { error } = await supabase.from('profiles').update({
       nickname: editName.trim(), track: editTrack, equipped: newEquipped,
     }).eq('id', userId);
-    if (error) showMsg('❌ שגיאה'); else { showMsg('✅ נשמר!'); sounds.coin(); refreshProfile(); }
+    if (error) showMsg('❌ שגיאה'); else { showMsg('✅ נשמר!'); sounds.coin(); await refreshProfile(); setTimeout(() => onClose(), 800); }
     setSaving(false);
   };
 
