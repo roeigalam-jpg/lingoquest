@@ -193,18 +193,56 @@ export default function AdminPanel() {
         {activeTab === 'announce' && (
           <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
             <h3 className="text-sm font-black text-white mb-3">📢 שלח הודעה לכל המשתמשים</h3>
+
+            {/* Quick Templates */}
+            <div className="mb-4">
+              <p className="text-xs font-bold text-indigo-300 mb-2">⚡ הודעות מוכנות:</p>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { emoji: '🎉', title: 'עדכון חדש!', msg: 'המשחק שודרג! משחקים חדשים, דמויות חדשות ופיצ\'רים מטורפים מחכים לכם! היכנסו עכשיו!' },
+                  { emoji: '🏆', title: 'טורניר חדש!', msg: 'טורניר אליפות חדש נפתח! הצטרפו, התחרו מול שחקנים אחרים ונצחו פרסים ענקיים!' },
+                  { emoji: '🎁', title: 'מבצע מטורף!', msg: 'רק היום! בונוס כפול על כל משחק! שחקו כמה שיותר וצברו XP ומטבעות!' },
+                  { emoji: '🔥', title: 'אתגר שבועי!', msg: 'האתגר השבועי התחיל! מי ישיג הכי הרבה XP השבוע? הפרס: 500 Lingos!' },
+                  { emoji: '🛒', title: 'פריטים חדשים בחנות!', msg: 'דמויות חדשות, כובעים מטורפים וחיות מחמד אגדיות נוספו לחנות! רוצו לקנות!' },
+                  { emoji: '⚡', title: 'תחזוקה הושלמה!', msg: 'סיימנו לשדרג את המשחק! הכל עובד מהר יותר, חלק יותר וכיף יותר!' },
+                  { emoji: '🤝', title: 'הזמינו חברים!', msg: 'הזמינו חברים וקבלו 200 מטבעות בונוס על כל חבר שמצטרף! שתפו את הלינק שלכם!' },
+                  { emoji: '🚀', title: 'משחק AI חדש!', msg: 'משחק חדש עם בינה מלאכותית! דברו באנגלית עם הרובוט החכם ולמדו מילים חדשות!' },
+                ].map((tpl, i) => (
+                  <button key={i} onClick={() => { setAnnounceEmoji(tpl.emoji); setAnnounceTitle(tpl.title); setAnnounceMsg(tpl.msg); }}
+                    className="py-2 px-3 rounded-xl text-xs font-bold text-right transition-all hover:scale-[1.02]"
+                    style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', color: '#e2e8f0' }}>
+                    {tpl.emoji} {tpl.title}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="h-px mb-4" style={{ background: 'rgba(255,255,255,0.1)' }} />
+            <p className="text-xs font-bold text-indigo-300 mb-2">✏️ או כתוב הודעה מותאמת:</p>
+
             <div className="space-y-3">
               <div className="flex gap-2">
                 <select value={announceEmoji} onChange={e => setAnnounceEmoji(e.target.value)}
                   className="px-3 py-2 rounded-xl text-lg" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#e2e8f0', outline: 'none', width: 60 }}>
-                  {['📢', '🎉', '🔥', '⚡', '🏆', '🎮', '🛒', '⚠️', '💡', '🎁'].map(e => <option key={e} value={e}>{e}</option>)}
+                  {['📢', '🎉', '🔥', '⚡', '🏆', '🎮', '🛒', '⚠️', '💡', '🎁', '🚀', '🤝', '💪', '🌟'].map(e => <option key={e} value={e}>{e}</option>)}
                 </select>
                 <input type="text" placeholder="כותרת..." value={announceTitle} onChange={e => setAnnounceTitle(e.target.value)}
                   className="flex-1 px-4 py-2 rounded-xl text-sm" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#e2e8f0', outline: 'none' }} />
               </div>
               <textarea placeholder="תוכן ההודעה..." value={announceMsg} onChange={e => setAnnounceMsg(e.target.value)} rows={3}
                 className="w-full px-4 py-2 rounded-xl text-sm" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#e2e8f0', outline: 'none', resize: 'none' }} />
-              <button onClick={sendAnnouncement} className="w-full py-3 rounded-xl text-white font-bold text-sm" style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}>📢 שלח הודעה</button>
+
+              {/* Preview */}
+              {announceTitle && (
+                <div className="rounded-xl p-4 text-center" style={{ background: 'rgba(99,102,241,0.1)', border: '1px dashed rgba(99,102,241,0.3)' }}>
+                  <div className="text-xs text-slate-500 mb-1">תצוגה מקדימה:</div>
+                  <div className="text-3xl mb-1">{announceEmoji}</div>
+                  <div className="text-sm font-black text-white">{announceTitle}</div>
+                  <div className="text-xs text-slate-300 mt-1 whitespace-pre-line">{announceMsg}</div>
+                </div>
+              )}
+
+              <button onClick={sendAnnouncement} className="w-full py-3 rounded-xl text-white font-bold text-sm" style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}>📢 שלח הודעה לכולם</button>
             </div>
             <p className="text-xs text-slate-500 text-center mt-3">ההודעה תופיע כפופאפ לכל משתמש בכניסה הבאה</p>
           </div>
