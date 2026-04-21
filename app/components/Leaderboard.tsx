@@ -6,6 +6,14 @@ import { sounds } from '../lib/sounds';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 const TRACK_EMOJI: any = { explorers: '🧭', voyagers: '🚀', masters: '👑' };
+const AVATAR_EMOJI: Record<string, string> = { ninja: '🥷', astronaut: '👩‍🚀', pirate: '🏴‍☠️', fairy: '🧚', robot: '🤖', wizard: '🧙‍♂️', superhero: '🦸', dragon: '🐲', alien: '👽', princess: '👸', knight: '🛡️' };
+
+const getPlayerAvatar = (entry: any) => {
+  const eq = entry.equipped || {};
+  if (eq.pet) return eq.pet.includes('cat') ? '🐱' : eq.pet.includes('dog') ? '🐶' : eq.pet.includes('dragon') ? '🐉' : eq.pet.includes('owl') ? '🦉' : eq.pet.includes('unicorn') ? '🦄' : eq.pet.includes('phoenix') ? '🔥' : '🐾';
+  if (eq.avatar && AVATAR_EMOJI[eq.avatar]) return AVATAR_EMOJI[eq.avatar];
+  return TRACK_EMOJI[entry.track] || '🧭';
+};
 
 export default function Leaderboard({ profile, userId, onChallenge }: { profile: any; userId: string; onChallenge?: (player: any) => void }) {
   const [lb, setLb] = useState<any[]>([]);
@@ -16,7 +24,8 @@ export default function Leaderboard({ profile, userId, onChallenge }: { profile:
   useEffect(() => {
     (async () => {
       try {
-        let data = await getLeaderboard(20);
+        const { data: profileData } = await supabase.from('profiles').select('id,nickname,level,xp,track,equipped').order('xp', { ascending: false }).limit(20);
+        let data = (profileData || []).map((p: any) => ({ ...p, total_xp: p.xp }));
         if (!data || data.length < 3) {
           const fakes = [
             { id: 'f1', nickname: 'StarKid', total_xp: 850, level: 9, track: 'explorers' },
@@ -83,7 +92,7 @@ export default function Leaderboard({ profile, userId, onChallenge }: { profile:
                   </div>
                   <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg"
                     style={{ background: isMe ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.05)' }}>
-                    {TRACK_EMOJI[entry.track] || '🧭'}
+                    {getPlayerAvatar(entry)}
                   </div>
                   <div className="flex-1">
                     <div className="text-sm font-black text-white">
