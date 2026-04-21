@@ -74,6 +74,9 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
   const equipped = profile.equipped || {};
   const avatarColor = equipped.skin ? (SKIN_COLORS[equipped.skin] || track.color) : track.color;
 
+  const AVATAR_MAP: Record<string, string> = { default: track.emoji, ninja: '🥷', astronaut: '👩‍🚀', pirate: '🏴‍☠️', fairy: '🧚', robot: '🤖', wizard: '🧙‍♂️', superhero: '🦸', dragon: '🐲', alien: '👽', princess: '👸', knight: '🛡️' };
+  const avatarEmoji = equipped.pet ? (SHOP_EMOJI[equipped.pet] || '🐾') : AVATAR_MAP[equipped.avatar || 'default'] || track.emoji;
+
   const referralLink = `https://lingoquest-75vj.onrender.com/?ref=${profile.referral_code}`;
   const shareText = isHe
     ? `🎮 היי! אני משחק ב-LingoQuest - משחק מגניב ללימוד אנגלית!\n\n🎁 הצטרף דרך הלינק שלי וקבל 200 מטבעות בונוס בחינם!\n\n🌟 ${referralLink}\n\n⭐ גם אני מקבל בונוס כשאתה מצטרף!`
@@ -294,7 +297,7 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
             <div className="flex items-center gap-3">
               <div className="relative cursor-pointer" onClick={() => { sounds.tap(); setShowProfile(true); }}>
                 <div className="w-16 h-16 rounded-full flex items-center justify-center text-2xl transition-all hover:scale-105" style={{ background: `${avatarColor}30`, border: `3px solid ${avatarColor}`, boxShadow: `0 0 20px ${avatarColor}30` }}>
-                  {equipped.pet ? SHOP_EMOJI[equipped.pet] : track.emoji}
+                  {avatarEmoji}
                 </div>
                 {equipped.hat && <span className="absolute -top-3 -right-1 text-xl">{SHOP_EMOJI[equipped.hat]}</span>}
               </div>
