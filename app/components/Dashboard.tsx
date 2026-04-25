@@ -19,6 +19,8 @@ import ProfileCard from './ProfileCard';
 import Tutorial from './Tutorial';
 import AIGame from './AIGame';
 import ParentalGate from './ParentalGate';
+import PremiumPage from './PremiumPage';
+import Paywall from './Paywall';
 
 const TRACKS: any = {
   explorers: { name: 'Explorers', nameHe: 'חוקרים', emoji: '🧭', color: '#22c55e' },
@@ -67,6 +69,8 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
   const [showTutorial, setShowTutorial] = useState(false);
   const [announcement, setAnnouncement] = useState<any>(null);
   const [parentalGate, setParentalGate] = useState<{ action: string; callback: () => void } | null>(null);
+  const [showPremium, setShowPremium] = useState(false);
+  const [showPaywall, setShowPaywall] = useState<string | null>(null);
   const inviteChannelRef = useRef<any>(null);
   const track = TRACKS[profile.track] || TRACKS.explorers;
   const xpToNext = profile.level * 100;
@@ -78,6 +82,46 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
 
   const AVATAR_MAP: Record<string, string> = { default: track.emoji, ninja: '🥷', astronaut: '👩‍🚀', pirate: '🏴‍☠️', fairy: '🧚', robot: '🤖', wizard: '🧙‍♂️', superhero: '🦸', dragon: '🐲', alien: '👽', princess: '👸', knight: '🛡️' };
   const avatarEmoji = equipped.pet ? (SHOP_EMOJI[equipped.pet] || '🐾') : AVATAR_MAP[equipped.avatar || 'default'] || track.emoji;
+
+  // Premium status
+  const isPremium = profile.is_premium === true;
+  const trialEnd = profile.trial_end ? new Date(profile.trial_end) : null;
+  const trialActive = trialEnd && trialEnd > new Date();
+  const premiumExpires = profile.premium_expires ? new Date(profile.premium_expires) : null;
+  const premiumActive = isPremium && (!premiumExpires || premiumExpires > new Date() || trialActive);
+
+  // Free user limits
+  const FREE_DAILY_GAMES = 3;
+  const FREE_MAX_LEVEL = 5;
+  const FREE_AI_CHATS = 3;
+
+  const checkCanPlay = (gameType: string): boolean => {
+    if (premiumActive) return true;
+    // Free users: limited games per day
+    const today = new Date().toDateString();
+    const gamestoday = profile.last_game_date === today ? (profile.daily_games_today || 0) : 0;
+    if (gamestoday >= FREE_DAILY_GAMES) {
+      setShowPaywall(`הגעת למגבלת ${FREE_DAILY_GAMES} משחקים ביום!`);
+      return false;
+    }
+    // Free users: limited game types
+    if (['sentence', 'listening', 'drag-match'].includes(gameType)) {
+      setShowPaywall('משחק זה זמין רק למשתמשי Premium!');
+      return false;
+    }
+    // Free users: can't play multiplayer
+    if (gameType === 'multi') {
+      setShowPaywall('מולטיפלייר זמין רק למשתמשי Premium!');
+      return false;
+    }
+    return true;
+  };
+
+  const trackGamePlayed = async () => {
+    const today = new Date().toDateString();
+    const gamesToday = profile.last_game_date === today ? (profile.daily_games_today || 0) + 1 : 1;
+    await supabase.from('profiles').update({ daily_games_today: gamesToday, last_game_date: today }).eq('id', userId);
+  };
 
   const referralLink = `https://lingoquest-75vj.onrender.com/?ref=${profile.referral_code}`;
   const shareText = isHe
@@ -177,6 +221,7 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
 
   const onGameFinish = async () => {
     setActiveGame(null);
+    await trackGamePlayed();
     await refreshProfile();
   };
 
@@ -276,6 +321,12 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
       {/* Profile Modal */}
       {showProfile && <ProfileCard profile={profile} userId={userId} refreshProfile={refreshProfile} onClose={() => setShowProfile(false)} />}
 
+      {/* Premium Page */}
+      {showPremium && <PremiumPage profile={profile} userId={userId} onClose={() => setShowPremium(false)} refreshProfile={refreshProfile} />}
+
+      {/* Paywall */}
+      {showPaywall && <Paywall reason={showPaywall} onUpgrade={() => { setShowPaywall(null); setShowPremium(true); }} onClose={() => setShowPaywall(null)} />}
+
       {/* Tutorial Modal */}
       {showTutorial && <Tutorial onClose={() => setShowTutorial(false)} />}
 
@@ -293,6 +344,11 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
           </button>
         </div>
         <div className="flex gap-2">
+          <button onClick={() => { sounds.tap(); setShowPremium(true); }}
+            className="text-xs px-3 py-1.5 rounded-lg font-bold"
+            style={{ background: premiumActive ? 'rgba(34,197,94,0.2)' : 'linear-gradient(135deg,rgba(139,92,246,0.3),rgba(245,158,11,0.2))', color: premiumActive ? '#34d399' : '#fbbf24', border: premiumActive ? '1px solid rgba(34,197,94,0.3)' : '1px solid rgba(245,158,11,0.3)' }}>
+            {premiumActive ? '⭐ Premium' : '⭐ שדרג!'}
+          </button>
           <button onClick={() => { sounds.tap(); setShowProfile(true); }}
             className="text-xs px-3 py-1.5 rounded-lg font-bold" style={{ background: 'rgba(99,102,241,0.2)', color: '#a5b4fc' }}>🪪</button>
           <button onClick={() => setParentalGate({ action: isHe ? 'התנתקות' : 'logout', callback: onLogout })} className="text-xs px-3 py-1.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.08)', color: '#64748b' }}>{t('dash.logout', lang)}</button>
@@ -311,7 +367,7 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
                 {equipped.hat && <span className="absolute -top-3 -right-1 text-xl">{SHOP_EMOJI[equipped.hat]}</span>}
               </div>
               <div>
-                <h2 className="text-lg font-black text-white">{profile.nickname}</h2>
+                <h2 className="text-lg font-black text-white">{profile.nickname} {premiumActive && <span className="text-xs align-middle" style={{ color: '#fbbf24' }}>⭐</span>}</h2>
                 <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: `${track.color}25`, color: track.color }}>{track.emoji} {isHe ? track.nameHe : track.name}</span>
               </div>
             </div>
@@ -479,9 +535,10 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
         </div>
       )}
 
-      {tab === 'map' && <WorldMap profile={profile} onSelectGame={(game) => { sounds.gameStart(); setActiveGame(game); }} />}
+      {tab === 'map' && <WorldMap profile={profile} onSelectGame={(game) => { if (checkCanPlay(game)) { sounds.gameStart(); setActiveGame(game); } }} />}
       {tab === 'arena' && <ArenaGame profile={profile} userId={userId} onFinish={async () => { setTab('home'); await refreshProfile(); }} />}
-      {tab === 'multi' && <MultiplayerGame profile={profile} userId={userId} onFinish={async () => { setTab('home'); await refreshProfile(); }} />}
+      {tab === 'multi' && premiumActive && <MultiplayerGame profile={profile} userId={userId} onFinish={async () => { setTab('home'); await refreshProfile(); }} />}
+      {tab === 'multi' && !premiumActive && <div className="px-4 py-20 text-center" dir="rtl"><div className="text-5xl mb-4">🔒</div><h3 className="text-lg font-black text-white mb-2">מולטיפלייר זמין ב-Premium</h3><p className="text-xs text-slate-400 mb-5">שחק מול חברים אמיתיים בזמן אמת!</p><button onClick={() => setShowPremium(true)} className="px-8 py-3 rounded-xl text-white font-bold" style={{ background: 'linear-gradient(135deg,#8b5cf6,#6366f1)' }}>⭐ שדרג עכשיו</button></div>}
       {tab === 'trophy' && <Tournament profile={profile} userId={userId} onPlay={() => { setTab('multi'); }} />}
       {tab === 'shop' && <Shop profile={profile} userId={userId} refreshProfile={refreshProfile} />}
       {tab === 'board' && <Leaderboard profile={profile} userId={userId} onChallenge={(player) => { sounds.gameStart(); setTab('multi'); }} />}
