@@ -50,7 +50,10 @@ export default function WordMatchGame({ profile, userId, onFinish }: { profile: 
   const track = profile.track || 'explorers';
   const [questions] = useState(() => shuffle(CONTENT[track] || CONTENT.explorers).slice(0, ROUNDS).map((q: any) => ({ ...q, options: shuffle([...q.options]) })));
   const [idx, setIdx] = useState(0);
-  const [displayOptions, setDisplayOptions] = useState<string[]>([]);
+  const [displayOptions, setDisplayOptions] = useState<string[]>(() => {
+    const qs = shuffle(CONTENT[track] || CONTENT.explorers).slice(0, ROUNDS).map((q: any) => ({ ...q, options: shuffle([...q.options]) }));
+    return qs[0]?.options ? shuffle([...qs[0].options]) : [];
+  });
   const [selected, setSelected] = useState<string | null>(null);
   const [correct, setCorrect] = useState<boolean | null>(null);
   const [score, setScore] = useState({ c: 0, w: 0 });
@@ -192,7 +195,7 @@ export default function WordMatchGame({ profile, userId, onFinish }: { profile: 
                 <span>{o}</span>
                 {show && isAns && <span>✅</span>}
                 {show && isSel && !isAns && <span>❌</span>}
-                {!show && <button onClick={(e) => { e.stopPropagation(); sounds.speak(o); }} className="text-base opacity-50 hover:opacity-100">🔊</button>}
+                {!show && <span onClick={(e) => { e.stopPropagation(); e.preventDefault(); sounds.speak(o); }} className="text-base opacity-50 hover:opacity-100 cursor-pointer">🔊</span>}
               </button>
             );
           })}

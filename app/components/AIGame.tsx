@@ -90,19 +90,45 @@ export default function AIGame({ profile, userId, onFinish }: { profile: any; us
       if (!SR) { resolve(''); return; }
       const recognition = new SR();
       recognition.lang = 'en-US';
-      recognition.continuous = false;
+      recognition.continuous = true;
       recognition.interimResults = false;
       recognition.maxAlternatives = 1;
+      let resolved = false;
+      let silenceTimer: any = null;
+
+      const done = (text: string) => {
+        if (resolved) return;
+        resolved = true;
+        setListening(false);
+        if (silenceTimer) clearTimeout(silenceTimer);
+        try { recognition.stop(); } catch (_) {}
+        resolve(text);
+      };
+
+      silenceTimer = setTimeout(() => { if (!resolved) done(''); }, 15000);
+
       setListening(true);
       setVoiceStatus('🎤 מקשיב... דבר באנגלית!');
       recognition.onresult = (event: any) => {
-        const text = event.results[0][0].transcript;
-        setListening(false);
-        resolve(text);
+        const last = event.results[event.results.length - 1];
+        if (last.isFinal) done(last[0].transcript);
       };
-      recognition.onerror = () => { setListening(false); resolve(''); };
-      recognition.onend = () => { setListening(false); };
-      try { recognition.start(); } catch (_) { setListening(false); resolve(''); }
+      recognition.onerror = (e: any) => {
+        if (e.error === 'no-speech' && voiceModeRef.current && !finishedRef.current && !resolved) {
+          try { recognition.stop(); } catch (_) {}
+          setTimeout(() => { if (!resolved) { resolved = true; setListening(false); resolve('__retry__'); } }, 300);
+          return;
+        }
+        done('');
+      };
+      recognition.onend = () => {
+        if (!resolved && voiceModeRef.current && !finishedRef.current) {
+          try { recognition.start(); } catch (_) { done(''); }
+          return;
+        }
+        if (!resolved) done('');
+      };
+      try { recognition.start(); } catch (_) { done(''); }
     });
   };
 
@@ -182,7 +208,13 @@ export default function AIGame({ profile, userId, onFinish }: { profile: any; us
     // If voice mode still on → listen again
     if (voiceModeRef.current && !finishedRef.current) {
       const nextText = await listen();
-      if (nextText && voiceModeRef.current) {
+      if (nextText === '__retry__' && voiceModeRef.current) {
+        // Silence timeout - restart listening
+        const retryText = await listen();
+        if (retryText && retryText !== '__retry__' && voiceModeRef.current) {
+          await processTurn(retryText);
+        }
+      } else if (nextText && voiceModeRef.current) {
         await processTurn(nextText);
       }
     }
@@ -194,11 +226,19 @@ export default function AIGame({ profile, userId, onFinish }: { profile: any; us
     setVoiceMode(true);
     sounds.gameStart();
 
-    // Start the loop
-    const text = await listen();
-    if (text && voiceModeRef.current) {
-      await processTurn(text);
-    }
+    // Start the loop with retry support
+    const voiceLoop = async () => {
+      while (voiceModeRef.current && !finishedRef.current) {
+        const text = await listen();
+        if (!voiceModeRef.current || finishedRef.current) break;
+        if (text === '__retry__') continue; // Retry on silence
+        if (text) {
+          await processTurn(text);
+          break; // processTurn handles the next listen
+        }
+      }
+    };
+    await voiceLoop();
   };
 
   const stopVoiceMode = () => {
