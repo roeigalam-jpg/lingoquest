@@ -23,7 +23,11 @@ export default function Tutorial({ onClose }: { onClose: () => void }) {
         <div className="rounded-3xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.15)' }}>
           {/* Slide Content */}
           <div className="p-8 text-center" style={{ background: s.bg, minHeight: 320 }}>
-            <div className="text-6xl mb-4" style={{ filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }}>{s.emoji}</div>
+            {slide === 0 ? (
+              <img src="/icon-512.png" alt="LingoQuest" className="w-24 h-24 rounded-2xl mx-auto mb-4" style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }} />
+            ) : (
+              <div className="text-6xl mb-4" style={{ filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }}>{s.emoji}</div>
+            )}
             <h2 className="text-2xl font-black text-white mb-2">{s.titleHe}</h2>
             <p className="text-xs text-white/70 mb-4">{s.titleEn}</p>
             <p className="text-sm text-white/90 leading-relaxed whitespace-pre-line">{s.textHe}</p>

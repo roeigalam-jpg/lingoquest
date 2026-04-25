@@ -256,7 +256,8 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
       {announcement && (
         <div className="fixed inset-0 flex items-center justify-center px-4 z-50" style={{ background: 'rgba(0,0,0,0.7)' }}>
           <div className="w-full max-w-sm rounded-3xl p-6 text-center" style={{ background: '#1e1b4b', border: '2px solid #6366f1' }} dir="rtl">
-            <div className="text-5xl mb-3">{announcement.emoji || '📢'}</div>
+            <img src="/icon-192.png" alt="LingoQuest" className="w-12 h-12 rounded-xl mx-auto mb-2" />
+            <div className="text-3xl mb-2">{announcement.emoji || '📢'}</div>
             <h3 className="text-xl font-black text-white mb-2">{announcement.title}</h3>
             <p className="text-sm text-slate-300 mb-5 whitespace-pre-line">{announcement.message}</p>
             <button onClick={() => { localStorage.setItem('lq_last_announcement', announcement.id); setAnnouncement(null); sounds.tap(); }}
@@ -272,8 +273,9 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
       {showTutorial && <Tutorial onClose={() => setShowTutorial(false)} />}
 
       {/* Top Bar */}
-      <div className="flex justify-between px-4 pt-3">
-        <div className="flex gap-2">
+      <div className="flex justify-between items-center px-4 pt-3">
+        <div className="flex items-center gap-2">
+          <img src="/icon-192.png" alt="LQ" className="w-8 h-8 rounded-lg" />
           <button onClick={() => { sounds.tap(); setLang(isHe ? 'en' : 'he'); }}
             className="text-xs px-3 py-1.5 rounded-lg font-bold" style={{ background: 'rgba(255,255,255,0.08)', color: '#a5b4fc' }}>
             {t('lang.switch', lang)}

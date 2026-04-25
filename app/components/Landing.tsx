@@ -29,9 +29,8 @@ export default function Landing({ onStart, lang, setLang }: { onStart: () => voi
 
       <div className={`text-center transition-all duration-1000 ${show ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
         dir={lang === 'he' ? 'rtl' : 'ltr'}>
-        <div className="mx-auto mb-6 relative w-32 h-32">
-          <div className="absolute inset-0 rounded-full" style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', boxShadow: '0 0 60px rgba(99,102,241,0.5)' }} />
-          <div className="absolute inset-0 flex items-center justify-center text-6xl">🌍</div>
+        <div className="mx-auto mb-6 w-36 h-36">
+          <img src="/icon-512.png" alt="LingoQuest" className="w-full h-full rounded-3xl" style={{ boxShadow: '0 0 60px rgba(99,102,241,0.5)' }} />
         </div>
         <h1 className="text-5xl font-black mb-2 tracking-tight" style={{ background: 'linear-gradient(135deg,#c084fc,#60a5fa,#34d399,#fbbf24)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
           {t('landing.title', lang)}
