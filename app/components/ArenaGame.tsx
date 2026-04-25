@@ -54,6 +54,7 @@ export default function ArenaGame({ profile, userId, onFinish }: { profile: any;
   const [countdown, setCountdown] = useState(3);
   const [winner, setWinner] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [displayOptions, setDisplayOptions] = useState<string[]>([]);
   const doneRef = useRef(false);
 
   const startBattle = () => {
@@ -105,6 +106,11 @@ export default function ArenaGame({ profile, userId, onFinish }: { profile: any;
     }, botSpeed[difficulty] + Math.random() * 500);
     return () => clearTimeout(t);
   }, [phase, idx, selected]);
+
+  // Reshuffle options for each question
+  useEffect(() => {
+    if (questions[idx]) setDisplayOptions(shuffle([...questions[idx].options]));
+  }, [idx, questions]);
 
   const pick = (ans: string) => {
     if (selected !== null || phase !== 'battle' || doneRef.current) return;
@@ -210,7 +216,7 @@ export default function ArenaGame({ profile, userId, onFinish }: { profile: any;
           <p className="text-sm font-semibold text-indigo-300">Quick! ⚡</p>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          {q.options.map((o: string, i: number) => {
+          {displayOptions.map((o: string, i: number) => {
             const isSel = selected === o, isAns = o === q.word, show = selected !== null;
             let bg = 'rgba(255,255,255,0.06)', brd = '1px solid rgba(255,255,255,0.12)', col = '#e2e8f0';
             if (show && isAns) { bg = 'rgba(34,197,94,0.2)'; brd = '2px solid #22c55e'; col = '#34d399'; }

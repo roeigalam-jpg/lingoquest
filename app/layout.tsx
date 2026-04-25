@@ -17,16 +17,16 @@ export const metadata: Metadata = {
   title: "LingoQuest - למד אנגלית בכיף!",
   description: "משחק לימוד אנגלית לילדים ישראלים עם הרפתקאות, אתגרים ומולטיפלייר!",
   manifest: "/manifest.json",
+  icons: {
+    icon: '/icon-192.png',
+    apple: '/apple-touch-icon.png',
+  },
   appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "LingoQuest" },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="he" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <head>
-        <link rel="apple-touch-icon" href="/icon-192.png" />
-        <meta name="mobile-web-app-capable" content="yes" />
-      </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

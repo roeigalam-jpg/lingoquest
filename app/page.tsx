@@ -8,20 +8,28 @@ import Verify from './components/Verify';
 import Dashboard from './components/Dashboard';
 
 export default function Home() {
-  const [screen, setScreen] = useState<'landing'|'register'|'verify'|'dashboard'>('landing');
+  const [screen, setScreen] = useState<'splash'|'landing'|'register'|'verify'|'dashboard'>('splash');
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [lang, setLang] = useState<Lang>('he');
 
   useEffect(() => {
+    // Show splash for at least 2 seconds
+    const splashTimer = setTimeout(() => {
+      if (loading) return; // Still loading auth
+      setScreen(profile ? 'dashboard' : 'landing');
+    }, 2000);
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) { setUser(session.user); loadProfile(session.user.id); }
-      else { setLoading(false); }
+      else { setLoading(false); setTimeout(() => setScreen('landing'), 1500); }
     });
     supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) { setUser(session.user); loadProfile(session.user.id); }
     });
+
+    return () => clearTimeout(splashTimer);
   }, []);
 
   const loadProfile = async (userId: string) => {
@@ -35,9 +43,16 @@ export default function Home() {
 
   const refreshProfile = async () => { if (user) await loadProfile(user.id); };
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center" style={{background:'linear-gradient(135deg,#0f0c29,#302b63,#24243e)'}}>
-      <div className="text-4xl animate-spin">🌍</div>
+  // Splash Screen with logo
+  if (screen === 'splash' || (loading && screen !== 'dashboard')) return (
+    <div className="min-h-screen flex flex-col items-center justify-center" style={{ background: 'linear-gradient(135deg,#0f0c29,#302b63,#24243e)' }}>
+      <img src="/splash-logo.png" alt="LingoQuest" className="w-64 h-64 mb-6 animate-pulse rounded-3xl" style={{ filter: 'drop-shadow(0 0 30px rgba(99,102,241,0.4))' }} />
+      <div className="flex gap-1.5 mt-4">
+        {[0, 1, 2].map(i => (
+          <div key={i} className="w-3 h-3 rounded-full animate-bounce" style={{ background: '#6366f1', animationDelay: `${i * 0.15}s` }} />
+        ))}
+      </div>
+      <p className="text-xs text-slate-500 mt-4">Loading...</p>
     </div>
   );
 

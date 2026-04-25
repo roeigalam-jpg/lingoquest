@@ -24,8 +24,8 @@ export default function Leaderboard({ profile, userId, onChallenge }: { profile:
   useEffect(() => {
     (async () => {
       try {
-        const { data: profileData } = await supabase.from('profiles').select('id,nickname,level,xp,track,equipped').order('xp', { ascending: false }).limit(20);
-        let data = (profileData || []).map((p: any) => ({ ...p, total_xp: p.xp }));
+        const { data: profileData } = await supabase.from('profiles').select('id,nickname,level,xp,track,equipped').order('xp', { ascending: false }).limit(50);
+        let data = (profileData || []).map((p: any) => ({ ...p, total_xp: p.xp + ((p.level || 1) - 1) * 100 })).sort((a: any, b: any) => b.total_xp - a.total_xp).slice(0, 20);
         if (!data || data.length < 3) {
           const fakes = [
             { id: 'f1', nickname: 'StarKid', total_xp: 850, level: 9, track: 'explorers' },
