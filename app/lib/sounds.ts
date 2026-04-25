@@ -42,9 +42,10 @@ class SoundSystem {
   }
 
   // ─── WRONG - Gentle "nope" ───
+  // ─── WRONG - Gentle soft "oops" (kid-friendly, not scary) ───
   wrong() {
-    this.playNote(330, 0.15, 'triangle', 0.1, 0);
-    this.playNote(262, 0.25, 'triangle', 0.08, 0.12);
+    this.playNote(350, 0.12, 'sine', 0.06, 0);
+    this.playNote(300, 0.15, 'sine', 0.05, 0.1);
   }
 
   // ─── CLICK - Soft pop ───

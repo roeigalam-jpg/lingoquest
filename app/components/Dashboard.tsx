@@ -18,6 +18,7 @@ import StoryGame from './StoryGame';
 import ProfileCard from './ProfileCard';
 import Tutorial from './Tutorial';
 import AIGame from './AIGame';
+import ParentalGate from './ParentalGate';
 
 const TRACKS: any = {
   explorers: { name: 'Explorers', nameHe: 'חוקרים', emoji: '🧭', color: '#22c55e' },
@@ -65,6 +66,7 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
   const [showProfile, setShowProfile] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const [announcement, setAnnouncement] = useState<any>(null);
+  const [parentalGate, setParentalGate] = useState<{ action: string; callback: () => void } | null>(null);
   const inviteChannelRef = useRef<any>(null);
   const track = TRACKS[profile.track] || TRACKS.explorers;
   const xpToNext = profile.level * 100;
@@ -252,6 +254,11 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
         </div>
       )}
 
+      {/* Parental Gate */}
+      {parentalGate && (
+        <ParentalGate action={parentalGate.action} onPass={() => { parentalGate.callback(); setParentalGate(null); }} onCancel={() => setParentalGate(null)} />
+      )}
+
       {/* Announcement Popup */}
       {announcement && (
         <div className="fixed inset-0 flex items-center justify-center px-4 z-50" style={{ background: 'rgba(0,0,0,0.7)' }}>
@@ -288,7 +295,7 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
         <div className="flex gap-2">
           <button onClick={() => { sounds.tap(); setShowProfile(true); }}
             className="text-xs px-3 py-1.5 rounded-lg font-bold" style={{ background: 'rgba(99,102,241,0.2)', color: '#a5b4fc' }}>🪪</button>
-          <button onClick={onLogout} className="text-xs px-3 py-1.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.08)', color: '#64748b' }}>{t('dash.logout', lang)}</button>
+          <button onClick={() => setParentalGate({ action: isHe ? 'התנתקות' : 'logout', callback: onLogout })} className="text-xs px-3 py-1.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.08)', color: '#64748b' }}>{t('dash.logout', lang)}</button>
         </div>
       </div>
 
@@ -445,24 +452,29 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
             <h3 className="text-sm font-black text-white mb-1">{t('dash.invite_title', lang)}</h3>
             <p className="text-xs text-slate-400 mb-3">{profile.referral_count} {t('dash.invited', lang)}</p>
             <div className="flex gap-2">
-              <button onClick={async () => {
-                try {
-                  if (navigator.share) {
-                    await navigator.share({ title: 'LingoQuest', text: shareText, url: referralLink });
-                  } else {
-                    window.open(`https://wa.me/?text=${whatsappMsg}`, '_blank');
-                  }
-                } catch (_) {}
-                sounds.coin();
+              <button onClick={() => {
+                setParentalGate({ action: isHe ? 'שיתוף עם חברים' : 'share with friends', callback: async () => {
+                  try {
+                    if (navigator.share) { await navigator.share({ title: 'LingoQuest', text: shareText, url: referralLink }); }
+                    else { window.open(`https://wa.me/?text=${whatsappMsg}`, '_blank'); }
+                  } catch (_) {}
+                  sounds.coin();
+                }});
               }}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-bold text-white text-sm"
-                style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}>📤 {isHe ? 'הזמן חברים' : 'Invite Friends'}</button>
+                style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', minHeight: 48 }}>📤 {isHe ? 'הזמן חברים' : 'Invite Friends'}</button>
               <button onClick={() => { navigator.clipboard.writeText(shareText).catch(() => {}); setCopied(true); sounds.coin(); setTimeout(() => setCopied(false), 2000); }}
                 className="px-4 py-2.5 rounded-xl font-bold text-sm"
-                style={{ background: 'rgba(255,255,255,0.05)', color: copied ? '#34d399' : '#e2e8f0', border: '1px solid rgba(255,255,255,0.1)' }}>
+                style={{ background: 'rgba(255,255,255,0.05)', color: copied ? '#34d399' : '#e2e8f0', border: '1px solid rgba(255,255,255,0.1)', minHeight: 48 }}>
                 {copied ? '✅' : '📋'}
               </button>
             </div>
+          </div>
+
+          {/* Privacy Policy Link */}
+          <div className="text-center mt-4">
+            <button onClick={() => setParentalGate({ action: isHe ? 'צפייה במדיניות פרטיות' : 'view privacy policy', callback: () => window.open('/privacy', '_blank') })}
+              className="text-[10px] text-slate-600 hover:text-slate-400">🔒 {isHe ? 'מדיניות פרטיות' : 'Privacy Policy'}</button>
           </div>
         </div>
       )}
