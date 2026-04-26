@@ -25,18 +25,8 @@ export default function Leaderboard({ profile, userId, onChallenge }: { profile:
     (async () => {
       try {
         const { data: profileData } = await supabase.from('profiles').select('id,nickname,level,xp,total_xp,track,equipped').order('total_xp', { ascending: false }).limit(20);
-        let data = (profileData || []).map((p: any) => ({ ...p, total_xp: p.total_xp || (p.xp + ((p.level || 1) - 1) * 100) }));
-        if (!data || data.length < 3) {
-          const fakes = [
-            { id: 'f1', nickname: 'StarKid', total_xp: 850, level: 9, track: 'explorers' },
-            { id: 'f2', nickname: 'WordNinja', total_xp: 720, level: 7, track: 'voyagers' },
-            { id: 'f3', nickname: 'LexiQueen', total_xp: 600, level: 6, track: 'masters' },
-            { id: 'f4', nickname: 'GrammarBot', total_xp: 480, level: 5, track: 'explorers' },
-            { id: 'f5', nickname: 'SpellHero', total_xp: 320, level: 3, track: 'voyagers' },
-          ];
-          data = [...(data || []), ...fakes].sort((a: any, b: any) => b.total_xp - a.total_xp);
-        }
-        setLb(data.slice(0, 15));
+        let data = profileData || [];
+        setLb(data.slice(0, 20));
       } catch (e) { console.error(e); }
       setLoading(false);
     })();
