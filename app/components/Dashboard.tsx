@@ -228,16 +228,17 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
 
   if (activeGame) {
     const gameProps = { profile, userId, onFinish: onGameFinish };
+    const k = Date.now().toString();
     switch (activeGame) {
-      case 'word-match': return <WordMatchGame {...gameProps} />;
-      case 'spelling': return <SpellingGame {...gameProps} />;
-      case 'sentence': return <SentenceGame {...gameProps} />;
-      case 'listening': return <ListeningGame {...gameProps} />;
-      case 'arena': return <ArenaGame {...gameProps} />;
-      case 'drag-match': return <DragMatchGame {...gameProps} />;
-      case 'story': return <StoryGame {...gameProps} />;
-      case 'ai-chat': return <AIGame {...gameProps} />;
-      default: return <WordMatchGame {...gameProps} />;
+      case 'word-match': return <WordMatchGame key={k} {...gameProps} />;
+      case 'spelling': return <SpellingGame key={k} {...gameProps} />;
+      case 'sentence': return <SentenceGame key={k} {...gameProps} />;
+      case 'listening': return <ListeningGame key={k} {...gameProps} />;
+      case 'arena': return <ArenaGame key={k} {...gameProps} />;
+      case 'drag-match': return <DragMatchGame key={k} {...gameProps} />;
+      case 'story': return <StoryGame key={k} {...gameProps} />;
+      case 'ai-chat': return <AIGame key={k} {...gameProps} />;
+      default: return <WordMatchGame key={k} {...gameProps} />;
     }
   }
 
