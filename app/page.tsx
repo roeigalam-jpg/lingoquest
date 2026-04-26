@@ -46,7 +46,7 @@ export default function Home() {
   // Splash Screen with logo
   if (screen === 'splash' || (loading && screen !== 'dashboard')) return (
     <div className="min-h-screen flex flex-col items-center justify-center" style={{ background: 'linear-gradient(135deg,#0f0c29,#302b63,#24243e)' }}>
-      <img src="/splash-logo.png" alt="LingoQuest" className="w-64 h-64 mb-6 animate-pulse rounded-3xl" style={{ filter: 'drop-shadow(0 0 30px rgba(99,102,241,0.4))' }} />
+      <img src="/splash-logo.png" alt="LingoQuest" className="w-80 h-80 mb-6 animate-pulse rounded-3xl" style={{ filter: 'drop-shadow(0 0 40px rgba(99,102,241,0.5))' }} />
       <div className="flex gap-1.5 mt-4">
         {[0, 1, 2].map(i => (
           <div key={i} className="w-3 h-3 rounded-full animate-bounce" style={{ background: '#6366f1', animationDelay: `${i * 0.15}s` }} />
