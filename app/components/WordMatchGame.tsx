@@ -2,43 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { completeGame } from '../lib/api';
 import { sounds } from '../lib/sounds';
-
-const CONTENT: any = {
-  explorers: [
-    { emoji: '🐱', word: 'Cat', options: ['Cat', 'Dog', 'Fish', 'Bird'] },
-    { emoji: '🐶', word: 'Dog', options: ['Cat', 'Dog', 'Cow', 'Pig'] },
-    { emoji: '🐟', word: 'Fish', options: ['Fish', 'Frog', 'Duck', 'Bee'] },
-    { emoji: '🌈', word: 'Rainbow', options: ['Sun', 'Rainbow', 'Cloud', 'Star'] },
-    { emoji: '🍎', word: 'Apple', options: ['Banana', 'Apple', 'Grape', 'Cherry'] },
-    { emoji: '🌞', word: 'Sun', options: ['Moon', 'Star', 'Sun', 'Cloud'] },
-    { emoji: '🏠', word: 'House', options: ['House', 'Tree', 'Car', 'Ball'] },
-    { emoji: '🚗', word: 'Car', options: ['Bus', 'Bike', 'Car', 'Boat'] },
-    { emoji: '🌺', word: 'Flower', options: ['Flower', 'Leaf', 'Tree', 'Grass'] },
-    { emoji: '⭐', word: 'Star', options: ['Moon', 'Sun', 'Star', 'Cloud'] },
-  ],
-  voyagers: [
-    { emoji: '🍳', word: 'Kitchen', options: ['Bedroom', 'Kitchen', 'Garden', 'Library'] },
-    { emoji: '🏔️', word: 'Mountain', options: ['Valley', 'Mountain', 'River', 'Desert'] },
-    { emoji: '🔬', word: 'Science', options: ['Science', 'History', 'Music', 'Sports'] },
-    { emoji: '🌊', word: 'Ocean', options: ['Lake', 'River', 'Ocean', 'Pond'] },
-    { emoji: '🎭', word: 'Theater', options: ['Cinema', 'Theater', 'Museum', 'Library'] },
-    { emoji: '🦁', word: 'Brave', options: ['Scared', 'Brave', 'Tired', 'Lazy'] },
-    { emoji: '🎨', word: 'Creative', options: ['Creative', 'Boring', 'Simple', 'Quiet'] },
-    { emoji: '🏰', word: 'Castle', options: ['Tower', 'Castle', 'Bridge', 'Temple'] },
-    { emoji: '🧭', word: 'Adventure', options: ['Journey', 'Adventure', 'Vacation', 'Mission'] },
-    { emoji: '🦋', word: 'Beautiful', options: ['Ugly', 'Beautiful', 'Small', 'Dark'] },
-  ],
-  masters: [
-    { emoji: '🧊', word: 'Break the ice', options: ['Break the ice', 'Cold shoulder', 'On thin ice', 'Chill out'] },
-    { emoji: '📖', word: 'Once upon a time', options: ['Long time ago', 'Once upon a time', 'In the beginning', 'Way back when'] },
-    { emoji: '🌧️', word: 'Under the weather', options: ['Under the weather', 'Raining cats', 'Storm coming', 'Cloudy mind'] },
-    { emoji: '💡', word: 'Bright idea', options: ['Smart move', 'Bright idea', 'Light bulb', 'Quick thought'] },
-    { emoji: '🎯', word: 'Hit the nail', options: ['Hit the nail', 'Strike while hot', 'Hammer time', 'Right on target'] },
-    { emoji: '🍰', word: 'Piece of cake', options: ['Easy peasy', 'Piece of cake', 'Sweet deal', 'Cherry on top'] },
-    { emoji: '⏰', word: 'Against the clock', options: ['Running late', 'Against the clock', 'Time flies', 'Clock ticking'] },
-    { emoji: '🎭', word: 'Break a leg', options: ['Good luck', 'Break a leg', 'Take a bow', 'Steal the show'] },
-  ],
-};
+import { WORD_MATCH_CONTENT } from '../lib/content';
 
 const ROUNDS = 8; const XP_PER = 10; const LINGO_PER = 5;
 
@@ -63,7 +27,7 @@ export default function WordMatchGame({ profile, userId, onFinish }: { profile: 
 
   // Generate questions client-side only
   useEffect(() => {
-    const pool = [...(CONTENT[track] || CONTENT.explorers)];
+    const pool = [...(WORD_MATCH_CONTENT[track] || WORD_MATCH_CONTENT.explorers)];
     const picked: any[] = [];
     const used = new Set<number>();
     while (picked.length < ROUNDS && picked.length < pool.length) {
