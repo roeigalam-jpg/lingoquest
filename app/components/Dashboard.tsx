@@ -335,7 +335,7 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
       {/* Top Bar */}
       <div className="px-4 pt-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">
-          <img src="/icon-192.png" alt="LQ" className="w-7 h-7 rounded-lg" />
+          <img src="/icon-192.png" alt="LQ" className="w-10 h-10 rounded-xl" style={{ boxShadow: '0 0 10px rgba(99,102,241,0.3)' }} />
           <button onClick={() => { sounds.tap(); setLang(isHe ? 'en' : 'he'); }}
             className="text-[10px] px-2 py-1 rounded-lg font-bold" style={{ background: 'rgba(255,255,255,0.08)', color: '#a5b4fc' }}>
             {t('lang.switch', lang)}
@@ -347,9 +347,9 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
         </div>
         <div className="flex items-center gap-1.5">
           <button onClick={() => { sounds.tap(); setShowPremium(true); }}
-            className="text-[10px] px-2 py-1 rounded-lg font-bold"
-            style={{ background: premiumActive ? 'rgba(34,197,94,0.2)' : 'linear-gradient(135deg,rgba(139,92,246,0.3),rgba(245,158,11,0.2))', color: premiumActive ? '#34d399' : '#fbbf24' }}>
-            {premiumActive ? '⭐' : '⭐ שדרג'}
+            className="text-[10px] px-2.5 py-1.5 rounded-lg font-black relative overflow-hidden"
+            style={{ background: premiumActive ? 'rgba(34,197,94,0.2)' : 'linear-gradient(135deg,#f59e0b,#ef4444,#8b5cf6)', color: 'white', boxShadow: premiumActive ? 'none' : '0 0 12px rgba(245,158,11,0.5)', animation: premiumActive ? 'none' : 'pulse 2s infinite' }}>
+            {premiumActive ? '⭐ Premium' : '🔥 Premium!'}
           </button>
           <button onClick={() => { sounds.tap(); setShowProfile(true); }}
             className="text-[10px] px-2 py-1 rounded-lg font-bold" style={{ background: 'rgba(99,102,241,0.2)', color: '#a5b4fc' }}>🪪</button>
@@ -445,6 +445,26 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
             </div>
             <span className="text-xl">▶</span>
           </button>
+
+          {/* Premium Banner */}
+          {!premiumActive && (
+            <button onClick={() => { sounds.gameStart(); setShowPremium(true); }}
+              className="w-full rounded-2xl p-4 mb-4 text-right transition-all hover:scale-[1.01] active:scale-[0.98] relative overflow-hidden"
+              style={{ background: 'linear-gradient(135deg,#7c3aed,#db2777,#f59e0b)', border: 'none' }}>
+              <div className="absolute inset-0 opacity-20" style={{ background: 'linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%)', animation: 'shimmer 3s infinite' }} />
+              <div className="flex items-center gap-3 relative z-10">
+                <div className="text-3xl">⭐</div>
+                <div className="flex-1">
+                  <div className="text-sm font-black text-white">{isHe ? 'שדרג ל-Premium!' : 'Upgrade to Premium!'}</div>
+                  <div className="text-[10px] text-white/80">{isHe ? 'כל המשחקים, AI ללא הגבלה, מולטיפלייר ועוד!' : 'All games, unlimited AI, multiplayer & more!'}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs font-black text-white">₪9.90</div>
+                  <div className="text-[10px] text-white/70">{isHe ? 'לחודש' : '/month'}</div>
+                </div>
+              </div>
+            </button>
+          )}
 
           {/* AI Chat Quick Action */}
           <button onClick={() => { sounds.gameStart(); setActiveGame('ai-chat'); }}
