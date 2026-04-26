@@ -48,14 +48,9 @@ function shuffle<T>(arr: T[]): T[] {
 
 export default function WordMatchGame({ profile, userId, onFinish }: { profile: any; userId: string; onFinish: () => void }) {
   const track = profile.track || 'explorers';
-  const [questions] = useState(() => {
-    const pool = [...(CONTENT[track] || CONTENT.explorers)];
-    // Double-shuffle for true randomness
-    const shuffled = shuffle(shuffle(pool));
-    return shuffled.slice(0, ROUNDS).map((q: any) => ({ ...q, options: shuffle([...q.options]) }));
-  });
+  const [questions, setQuestions] = useState<any[]>([]);
   const [idx, setIdx] = useState(0);
-  const [displayOptions, setDisplayOptions] = useState<string[]>(() => []);
+  const [displayOptions, setDisplayOptions] = useState<string[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [correct, setCorrect] = useState<boolean | null>(null);
   const [score, setScore] = useState({ c: 0, w: 0 });
@@ -64,6 +59,20 @@ export default function WordMatchGame({ profile, userId, onFinish }: { profile: 
   const [timer, setTimer] = useState(0);
   const [saving, setSaving] = useState(false);
   const timerRef = useRef<any>(null);
+  const [ready, setReady] = useState(false);
+
+  // Generate questions client-side only
+  useEffect(() => {
+    const pool = [...(CONTENT[track] || CONTENT.explorers)];
+    const picked: any[] = [];
+    const used = new Set<number>();
+    while (picked.length < ROUNDS && picked.length < pool.length) {
+      const r = Math.floor(Math.random() * pool.length);
+      if (!used.has(r)) { used.add(r); picked.push({ ...pool[r], options: shuffle([...pool[r].options]) }); }
+    }
+    setQuestions(picked);
+    setReady(true);
+  }, []);
 
   // Reshuffle options every time question changes
   useEffect(() => {
@@ -141,6 +150,11 @@ export default function WordMatchGame({ profile, userId, onFinish }: { profile: 
   );
 
   const q = questions[idx];
+  if (!ready || !q) return (
+    <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#0f0c29,#302b63,#24243e)' }}>
+      <div className="text-3xl animate-spin">🎮</div>
+    </div>
+  );
   const progress = (idx / questions.length) * 100;
 
   return (
