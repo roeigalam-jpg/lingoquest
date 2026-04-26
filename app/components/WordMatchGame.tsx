@@ -48,12 +48,14 @@ function shuffle<T>(arr: T[]): T[] {
 
 export default function WordMatchGame({ profile, userId, onFinish }: { profile: any; userId: string; onFinish: () => void }) {
   const track = profile.track || 'explorers';
-  const [questions] = useState(() => shuffle(CONTENT[track] || CONTENT.explorers).slice(0, ROUNDS).map((q: any) => ({ ...q, options: shuffle([...q.options]) })));
-  const [idx, setIdx] = useState(0);
-  const [displayOptions, setDisplayOptions] = useState<string[]>(() => {
-    const qs = shuffle(CONTENT[track] || CONTENT.explorers).slice(0, ROUNDS).map((q: any) => ({ ...q, options: shuffle([...q.options]) }));
-    return qs[0]?.options ? shuffle([...qs[0].options]) : [];
+  const [questions] = useState(() => {
+    const pool = [...(CONTENT[track] || CONTENT.explorers)];
+    // Double-shuffle for true randomness
+    const shuffled = shuffle(shuffle(pool));
+    return shuffled.slice(0, ROUNDS).map((q: any) => ({ ...q, options: shuffle([...q.options]) }));
   });
+  const [idx, setIdx] = useState(0);
+  const [displayOptions, setDisplayOptions] = useState<string[]>(() => []);
   const [selected, setSelected] = useState<string | null>(null);
   const [correct, setCorrect] = useState<boolean | null>(null);
   const [score, setScore] = useState({ c: 0, w: 0 });
@@ -68,7 +70,7 @@ export default function WordMatchGame({ profile, userId, onFinish }: { profile: 
     if (questions[idx]) {
       setDisplayOptions(shuffle([...questions[idx].options]));
     }
-  }, [idx]);
+  }, [idx, questions]);
 
   useEffect(() => { 
     timerRef.current = setInterval(() => setTimer(t => t + 1), 1000); 
