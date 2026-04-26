@@ -21,6 +21,7 @@ import AIGame from './AIGame';
 import ParentalGate from './ParentalGate';
 import PremiumPage from './PremiumPage';
 import Paywall from './Paywall';
+import OfflineBanner from './OfflineBanner';
 
 const TRACKS: any = {
   explorers: { name: 'Explorers', nameHe: 'חוקרים', emoji: '🧭', color: '#22c55e' },
@@ -245,6 +246,7 @@ export default function Dashboard({ profile, userId, refreshProfile, onLogout, l
 
   return (
     <div style={{ background: 'linear-gradient(135deg,#0f0c29,#302b63,#24243e)', minHeight: '100vh' }}>
+      <OfflineBanner />
       {/* Level Up */}
       {showLevelUp && (
         <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
