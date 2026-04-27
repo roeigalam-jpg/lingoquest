@@ -16,19 +16,20 @@ export default function WorldMap({ profile, onSelectGame }: { profile: any; onSe
       <h2 className="text-xl font-black text-white mb-1">🗺️ World Map</h2>
       <p className="text-xs mb-5 text-slate-400">Explore islands and conquer challenges!</p>
       <div className="space-y-3">
-        {ISLANDS.map(island => {
+        {ISLANDS.map((island, idx) => {
           const locked = profile.level < island.unlockLevel;
           return (
             <div key={island.id}
-              className={`rounded-2xl p-5 transition-all ${locked ? 'opacity-40' : 'hover:scale-[1.01] cursor-pointer'}`}
+              className={`rounded-2xl p-5 animate-fade-in card-glass-hover ${locked ? 'opacity-40' : 'cursor-pointer'}`}
               style={{
                 background: locked ? 'rgba(255,255,255,0.02)' : `linear-gradient(135deg,${island.color}10,${island.color}05)`,
                 border: `1px solid ${locked ? 'rgba(255,255,255,0.05)' : island.color + '40'}`,
+                animationDelay: `${idx * 0.07}s`,
               }}
               onClick={() => !locked && onSelectGame(island.game)}>
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl"
-                  style={{ background: locked ? 'rgba(255,255,255,0.05)' : `${island.color}20`, border: `2px solid ${locked ? 'rgba(255,255,255,0.1)' : island.color + '50'}` }}>
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl ${!locked ? 'animate-float' : ''}`}
+                  style={{ background: locked ? 'rgba(255,255,255,0.05)' : `${island.color}20`, border: `2px solid ${locked ? 'rgba(255,255,255,0.1)' : island.color + '50'}`, animationDelay: `${idx * 0.3}s` }}>
                   {locked ? '🔒' : island.emoji}
                 </div>
                 <div className="flex-1">

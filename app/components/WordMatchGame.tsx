@@ -86,26 +86,26 @@ export default function WordMatchGame({ profile, userId, onFinish }: { profile: 
 
   if (done) return (
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'linear-gradient(135deg,#0f0c29,#302b63,#24243e)' }}>
-      <div className="w-full max-w-md">
-        <div className="rounded-3xl p-7 text-center" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-          <div className="text-5xl mb-2">{pct === 100 ? '🏆' : pct >= 70 ? '🌟' : '💪'}</div>
-          <h2 className="text-2xl font-black text-white mb-3">{pct === 100 ? 'PERFECT!' : pct >= 70 ? 'Great Job!' : 'Keep Going!'}</h2>
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4" style={{ background: `${gc[grade]}20`, border: `3px solid ${gc[grade]}` }}>
-            <span className="text-3xl font-black" style={{ color: gc[grade] }}>{grade}</span>
+      <div className="w-full max-w-md animate-fade-in-up">
+        <div className="rounded-3xl p-7 text-center card-glass">
+          <div className="text-6xl mb-3 animate-bounce-in">{pct === 100 ? '🏆' : pct >= 70 ? '🌟' : '💪'}</div>
+          <h2 className="text-2xl font-black text-white mb-3 animate-fade-in">{pct === 100 ? '🎉 PERFECT!' : pct >= 70 ? '🌟 Great Job!' : '💪 Keep Going!'}</h2>
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 animate-pop" style={{ background: `${gc[grade]}20`, border: `3px solid ${gc[grade]}`, boxShadow: `0 0 20px ${gc[grade]}40` }}>
+            <span className="text-4xl font-black" style={{ color: gc[grade] }}>{grade}</span>
           </div>
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <div className="rounded-xl p-3" style={{ background: 'rgba(34,197,94,0.1)' }}><div className="text-xl font-black" style={{ color: '#34d399' }}>{score.c}</div><div className="text-xs" style={{ color: '#6ee7b7' }}>Correct ✅</div></div>
-            <div className="rounded-xl p-3" style={{ background: 'rgba(239,68,68,0.1)' }}><div className="text-xl font-black" style={{ color: '#f87171' }}>{score.w}</div><div className="text-xs" style={{ color: '#fca5a5' }}>Missed ❌</div></div>
+          <div className="grid grid-cols-2 gap-3 mb-4 stagger-children">
+            <div className="rounded-xl p-3 animate-fade-in" style={{ background: 'rgba(34,197,94,0.1)' }}><div className="text-2xl font-black" style={{ color: '#34d399' }}>{score.c}</div><div className="text-xs" style={{ color: '#6ee7b7' }}>Correct ✅</div></div>
+            <div className="rounded-xl p-3 animate-fade-in" style={{ background: 'rgba(239,68,68,0.1)' }}><div className="text-2xl font-black" style={{ color: '#f87171' }}>{score.w}</div><div className="text-xs" style={{ color: '#fca5a5' }}>Missed ❌</div></div>
           </div>
-          <div className="rounded-xl p-3 mb-4" style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.1),rgba(245,158,11,0.1))', border: '1px solid rgba(99,102,241,0.2)' }}>
-            <div className="flex justify-center gap-5">
-              <div><span>⭐</span><span className="font-black text-white ml-1">+{score.c * XP_PER}</span></div>
-              <div><span>💰</span><span className="font-black text-white ml-1">+{score.c * LINGO_PER}</span></div>
-              {pct === 100 && <div><span>🎫</span><span className="font-black text-white ml-1">+1</span></div>}
+          <div className="rounded-xl p-4 mb-4 animate-fade-in" style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.15),rgba(245,158,11,0.1))', border: '1px solid rgba(99,102,241,0.2)' }}>
+            <div className="flex justify-center gap-6">
+              <div className="animate-pop" style={{ animationDelay: '0.2s' }}><span>⭐</span><span className="font-black text-white text-lg ml-1">+{score.c * XP_PER}</span></div>
+              <div className="animate-pop" style={{ animationDelay: '0.4s' }}><span>💰</span><span className="font-black text-white text-lg ml-1">+{score.c * LINGO_PER}</span></div>
+              {pct === 100 && <div className="animate-pop" style={{ animationDelay: '0.6s' }}><span>🎫</span><span className="font-black text-white text-lg ml-1">+1</span></div>}
             </div>
           </div>
           <p className="text-xs mb-4 text-slate-500">⏱️ {formatTime(timer)}</p>
-          <button onClick={handleFinish} disabled={saving} className="w-full py-3.5 rounded-xl text-white font-bold transition-all hover:scale-[1.02] disabled:opacity-60" style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}>
+          <button onClick={handleFinish} disabled={saving} className="w-full py-3.5 rounded-xl text-white font-bold btn-game disabled:opacity-60" style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', boxShadow: '0 4px 20px rgba(99,102,241,0.3)' }}>
             {saving ? '⚡ Saving...' : '🏠 Continue'}
           </button>
         </div>
@@ -142,19 +142,19 @@ export default function WordMatchGame({ profile, userId, onFinish }: { profile: 
 
       <div className="flex-1 flex flex-col items-center justify-center max-w-md mx-auto w-full">
         {/* Emoji + Speak Button */}
-        <div className="relative mb-6">
-          <div className="rounded-3xl flex items-center justify-center transition-all duration-300"
+        <div className="relative mb-6 animate-fade-in-scale">
+          <div className={`rounded-3xl flex items-center justify-center transition-all duration-300 ${correct === true ? 'answer-correct' : correct === false ? 'answer-wrong' : ''}`}
             style={{
               width: 160, height: 160,
               background: 'rgba(255,255,255,0.05)', border: `2px solid ${correct === true ? '#22c55e' : correct === false ? '#ef4444' : 'rgba(255,255,255,0.1)'}`,
               boxShadow: correct === true ? '0 0 40px rgba(34,197,94,0.4)' : correct === false ? '0 0 40px rgba(239,68,68,0.3)' : '0 10px 40px rgba(0,0,0,0.3)',
-              transform: correct === true ? 'scale(1.05)' : correct === false ? 'scale(0.95)' : 'scale(1)',
             }}>
-            <span style={{ fontSize: 72 }}>{q.emoji}</span>
+            <span className={correct === true ? 'animate-bounce' : ''} style={{ fontSize: 72 }}>{q.emoji}</span>
           </div>
+          {correct === true && <div className="absolute -top-4 left-1/2 -translate-x-1/2 text-2xl animate-confetti">⭐</div>}
           {/* Speak button */}
           <button onClick={() => sounds.speak(q.word)}
-            className="absolute -bottom-3 -right-3 w-12 h-12 rounded-full flex items-center justify-center text-xl transition-all hover:scale-110 active:scale-90"
+            className="absolute -bottom-3 -right-3 w-12 h-12 rounded-full flex items-center justify-center text-xl transition-all hover:scale-110 active:scale-90 animate-glow"
             style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', boxShadow: '0 4px 15px rgba(99,102,241,0.4)' }}>
             🔊
           </button>
@@ -162,7 +162,7 @@ export default function WordMatchGame({ profile, userId, onFinish }: { profile: 
 
         <p className="text-sm font-semibold mb-5 text-indigo-300">{track === 'masters' ? 'Match the idiom! 💬' : 'What is this? 🤔'}</p>
         
-        <div className="grid grid-cols-2 gap-3 w-full">
+        <div className="grid grid-cols-2 gap-3 w-full stagger-children">
           {displayOptions.map((o: string, i: number) => {
             const isSel = selected === o, isAns = o === q.word, show = selected !== null;
             let bg = 'rgba(255,255,255,0.06)', brd = '1px solid rgba(255,255,255,0.12)', col = '#e2e8f0';
@@ -170,10 +170,10 @@ export default function WordMatchGame({ profile, userId, onFinish }: { profile: 
             else if (show && isSel) { bg = 'rgba(239,68,68,0.2)'; brd = '2px solid #ef4444'; col = '#f87171'; }
             return (
               <button key={i} onClick={() => pick(o)} disabled={selected !== null}
-                className="py-4 px-3 rounded-2xl font-bold text-sm transition-all hover:scale-[1.03] active:scale-[0.97] disabled:hover:scale-100 flex items-center justify-center gap-2"
-                style={{ background: bg, border: brd, color: col }}>
+                className={`py-4 px-3 rounded-2xl font-bold text-sm btn-game flex items-center justify-center gap-2 animate-fade-in ${show && isAns ? 'answer-correct' : ''} ${show && isSel && !isAns ? 'answer-wrong' : ''}`}
+                style={{ background: bg, border: brd, color: col, animationDelay: `${i * 0.05}s` }}>
                 <span>{o}</span>
-                {show && isAns && <span>✅</span>}
+                {show && isAns && <span className="animate-bounce-in">✅</span>}
                 {show && isSel && !isAns && <span>❌</span>}
                 {!show && <span onClick={(e) => { e.stopPropagation(); e.preventDefault(); sounds.speak(o); }} className="text-base opacity-50 hover:opacity-100 cursor-pointer">🔊</span>}
               </button>
@@ -181,8 +181,8 @@ export default function WordMatchGame({ profile, userId, onFinish }: { profile: 
           })}
         </div>
         {correct !== null && (
-          <p className="mt-4 text-lg font-black" style={{ color: correct ? '#34d399' : '#f87171' }}>
-            {correct ? (streak >= 3 ? '🔥 On Fire!' : 'Great! ⭐') : `Answer: ${q.word}`}
+          <p className="mt-4 text-lg font-black animate-pop" style={{ color: correct ? '#34d399' : '#f87171' }}>
+            {correct ? (streak >= 3 ? '🔥 On Fire!' : '🎉 Great! ⭐') : `Answer: ${q.word}`}
           </p>
         )}
       </div>
